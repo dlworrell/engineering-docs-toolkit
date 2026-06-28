@@ -2,6 +2,7 @@ from pathlib import Path
 
 from .config import load_config
 from .html import markdown_to_html
+from .pandoc import run_pandoc
 from .plugin import ProjectContext
 from .plugin_registry import default_plugins
 
@@ -28,6 +29,13 @@ def build_project(root: Path | None = None) -> None:
 
     print(f"wrote {book_md}")
     print(f"wrote {book_html}")
+
+    if "docx" in config.outputs:
+        if run_pandoc(book_md, out / "book.docx"):
+            print(f"wrote {out / 'book.docx'}")
+    if "epub" in config.outputs:
+        if run_pandoc(book_md, out / "book.epub"):
+            print(f"wrote {out / 'book.epub'}")
 
     context = ProjectContext(root=root, output=out)
     for plugin in default_plugins():
