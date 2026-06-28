@@ -3,6 +3,7 @@ name = "engineering-docs-toolkit"
 version = "0.1.0"
 description = "Reusable build tooling for engineering documentation and translated technical books"
 requires-python = ">=3.11"
+license = "Apache-2.0"
 
 [project.scripts]
 edt = "edt.cli:main"
