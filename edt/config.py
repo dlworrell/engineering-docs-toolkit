@@ -21,10 +21,13 @@ def load_config(root: Path) -> BookConfig:
     title = raw.get("title")
     source_dir = raw.get("source_dir")
     output_dir = raw.get("output_dir")
+    outputs = raw.get("outputs")
     if isinstance(title, str):
         cfg.title = title
     if isinstance(source_dir, str):
         cfg.source_dir = Path(source_dir)
     if isinstance(output_dir, str):
         cfg.output_dir = Path(output_dir)
+    if isinstance(outputs, list):
+        cfg.outputs = [str(item) for item in outputs]
     return cfg
