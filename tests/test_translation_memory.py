@@ -22,3 +22,8 @@ def test_has_term(tmp_path):
     db = tmp_path / "memory.sqlite"
     add_term(db, "A", "B")
     assert has_term(db, "A")
+
+
+def test_lookup_missing(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    assert lookup_term(db, "A") is None
