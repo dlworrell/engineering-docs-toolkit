@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .simple_yaml import read_simple_yaml
+
 
 @dataclass
 class BookConfig:
@@ -11,4 +13,12 @@ class BookConfig:
 
 
 def load_config(root: Path) -> BookConfig:
-    return BookConfig()
+    path = root / "book.yaml"
+    cfg = BookConfig()
+    if not path.exists():
+        return cfg
+    raw = read_simple_yaml(path)
+    title = raw.get("title")
+    if isinstance(title, str):
+        cfg.title = title
+    return cfg
