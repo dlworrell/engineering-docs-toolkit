@@ -5,6 +5,7 @@ from .build import build_project
 from .check import check_project
 from .init_project import init_project
 from .pdf_import import import_pdf
+from .translation_memory import add_term
 
 
 def main() -> None:
@@ -16,6 +17,10 @@ def main() -> None:
     imp = sub.add_parser("import-pdf")
     imp.add_argument("source")
     imp.add_argument("output")
+    mem = sub.add_parser("tm-add")
+    mem.add_argument("database")
+    mem.add_argument("source")
+    mem.add_argument("target")
     args = parser.parse_args()
     if args.command in (None, "build"):
         build_project()
@@ -28,6 +33,8 @@ def main() -> None:
         init_project(Path.cwd())
     elif args.command == "import-pdf":
         import_pdf(Path(args.source), Path(args.output))
+    elif args.command == "tm-add":
+        add_term(Path(args.database), args.source, args.target)
 
 
 if __name__ == "__main__":
