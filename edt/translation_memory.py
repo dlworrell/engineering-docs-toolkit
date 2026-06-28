@@ -18,3 +18,7 @@ def lookup_term(path: Path, source: str) -> str | None:
     with sqlite3.connect(path) as db:
         row = db.execute("select target from terms where source = ? limit 1", (source,)).fetchone()
     return None if row is None else str(row[0])
+
+
+def has_term(path: Path, source: str) -> bool:
+    return lookup_term(path, source) is not None
