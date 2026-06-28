@@ -15,3 +15,5 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -e . pytest
       - run: make test
+      - run: cd examples/minimal-book && edt build
+      - run: cd examples/minimal-book && test -f output/book.html
