@@ -19,6 +19,12 @@ def load_config(root: Path) -> BookConfig:
         return cfg
     raw = read_simple_yaml(path)
     title = raw.get("title")
+    source_dir = raw.get("source_dir")
+    output_dir = raw.get("output_dir")
     if isinstance(title, str):
         cfg.title = title
+    if isinstance(source_dir, str):
+        cfg.source_dir = Path(source_dir)
+    if isinstance(output_dir, str):
+        cfg.output_dir = Path(output_dir)
     return cfg
