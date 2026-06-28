@@ -16,3 +16,9 @@ def test_lookup_term(tmp_path):
     db = tmp_path / "memory.sqlite"
     add_term(db, "A", "B")
     assert lookup_term(db, "A") == "B"
+
+
+def test_has_term(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    add_term(db, "A", "B")
+    assert has_term(db, "A")
