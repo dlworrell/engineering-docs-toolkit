@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from .config import load_config
-from .glossary import generate_glossary
 from .html import markdown_to_html
-from .indexes import generate_index_summary
+from .plugin import ProjectContext
+from .plugin_registry import default_plugins
 
 
 def build_project(root: Path | None = None) -> None:
@@ -29,10 +29,6 @@ def build_project(root: Path | None = None) -> None:
     print(f"wrote {book_md}")
     print(f"wrote {book_html}")
 
-    glossary = generate_glossary(root)
-    if glossary:
-        print(f"wrote {glossary}")
-
-    index_summary = generate_index_summary(root)
-    if index_summary:
-        print(f"wrote {index_summary}")
+    context = ProjectContext(root=root, output=out)
+    for plugin in default_plugins():
+        plugin.run(context)
