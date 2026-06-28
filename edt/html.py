@@ -24,7 +24,7 @@ def render_inline(text: str) -> str:
 
 
 def markdown_to_html(text: str, title: str) -> str:
-    lines = ["<!doctype html>", '<html lang="en">', "<head>", '<meta charset="utf-8">', f"<title>{escape(title)}</title>", "</head>", "<body>"]
+    lines = ["<!doctype html>", '<html lang="en">', "<head>", '<meta charset="utf-8">', f"<title>{escape(title)}</title>", "</head>", "<body>", '<main role="main">']
     for line in text.splitlines():
         if line.startswith("# "):
             lines.append(f"<h1>{render_inline(line[2:])}</h1>")
@@ -36,5 +36,5 @@ def markdown_to_html(text: str, title: str) -> str:
             lines.append(f"<p>{render_inline(line)}</p>")
         else:
             lines.append("")
-    lines.extend(["</body>", "</html>"])
+    lines.extend(["</main>", "</body>", "</html>"])
     return "\n".join(lines)
