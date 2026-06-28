@@ -2,3 +2,5 @@ title: Minimal Engineering Book
 outputs:
   - md
   - html
+  - docx
+  - epub
