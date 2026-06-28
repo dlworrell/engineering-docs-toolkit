@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from .config import load_config
+from .hash_cache import hash_text
 from .html import markdown_to_html
 from .pandoc import run_pandoc
 from .plugin import ProjectContext
@@ -26,6 +27,7 @@ def build_project(root: Path | None = None) -> None:
     book_html = out / "book.html"
     book_md.write_text(book_text, encoding="utf-8")
     book_html.write_text(markdown_to_html(book_text, config.title), encoding="utf-8")
+    (out / "book.hash").write_text(hash_text(book_text) + "\n", encoding="utf-8")
 
     print(f"wrote {book_md}")
     print(f"wrote {book_html}")
