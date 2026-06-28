@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from .config import load_config
+from .glossary import generate_glossary
 from .html import markdown_to_html
+from .indexes import generate_index_summary
 
 
 def build_project(root: Path | None = None) -> None:
@@ -19,8 +21,18 @@ def build_project(root: Path | None = None) -> None:
         parts.append(chapter.read_text(encoding="utf-8").strip())
 
     book_text = "\n\n".join(parts) + "\n"
-    (out / "book.md").write_text(book_text, encoding="utf-8")
-    (out / "book.html").write_text(markdown_to_html(book_text, config.title), encoding="utf-8")
+    book_md = out / "book.md"
+    book_html = out / "book.html"
+    book_md.write_text(book_text, encoding="utf-8")
+    book_html.write_text(markdown_to_html(book_text, config.title), encoding="utf-8")
 
-    print(f"wrote {out / 'book.md'}")
-    print(f"wrote {out / 'book.html'}")
+    print(f"wrote {book_md}")
+    print(f"wrote {book_html}")
+
+    glossary = generate_glossary(root)
+    if glossary:
+        print(f"wrote {glossary}")
+
+    index_summary = generate_index_summary(root)
+    if index_summary:
+        print(f"wrote {index_summary}")
