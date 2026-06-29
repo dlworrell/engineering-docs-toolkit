@@ -65,3 +65,11 @@ def test_add_reviewed_term(tmp_path):
     with sqlite3.connect(db) as conn:
         rows = conn.execute("select reviewer, status from terms").fetchall()
     assert rows == [("D", "approved")]
+
+
+def test_quality_columns(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    init_memory(db)
+    with sqlite3.connect(db) as conn:
+        names = [row[1] for row in conn.execute("pragma table_info(terms)")]
+    assert "confidence" in names
