@@ -1,5 +1,5 @@
 from edt.edom import EdomNode
-from edt.edom_json import dict_to_node, node_to_dict
+from edt.edom_json import dict_to_node, node_to_dict, read_edom_json
 
 
 def test_node_to_dict_kind():
