@@ -30,3 +30,7 @@ def test_import_tmx_stores_units(tmp_path):
     source.write_text("<tmx><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>", encoding="utf-8")
     import_tmx(source, db)
     assert lookup_term(db, "A") == "B"
+
+
+def test_tmx_header_builder():
+    assert "creationtool" in tmx_header("sv-SE")
