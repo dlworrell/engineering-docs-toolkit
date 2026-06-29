@@ -12,7 +12,8 @@ def tmx_date() -> str:
 
 
 def tmx_header(source_lang: str = "und") -> str:
-    return f'<header creationtool="engineering-docs-toolkit" creationtoolversion="0" datatype="PlainText" segtype="sentence" adminlang="en" srclang="{escape(source_lang)}" />'
+    date = tmx_date()
+    return f'<header creationtool="engineering-docs-toolkit" creationtoolversion="0" datatype="PlainText" segtype="sentence" adminlang="en" srclang="{escape(source_lang)}" creationdate="{date}" changedate="{date}" />'
 
 
 def tmx_lang(element: ET.Element) -> str:
