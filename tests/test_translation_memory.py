@@ -35,3 +35,11 @@ def test_language_columns(tmp_path):
     with sqlite3.connect(db) as conn:
         names = [row[1] for row in conn.execute("pragma table_info(terms)")]
     assert "source_lang" in names
+
+
+def test_add_term_pair(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    add_term_pair(db, "A", "B", "sv", "en")
+    with sqlite3.connect(db) as conn:
+        rows = conn.execute("select source_lang, target_lang from terms").fetchall()
+    assert rows == [("sv", "en")]
