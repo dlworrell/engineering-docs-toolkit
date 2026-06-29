@@ -84,3 +84,8 @@ def test_export_tmx_metadata_props(tmp_path):
     add_reviewed_term(db, "A", "B", "D", "approved")
     export_tmx(db, out)
     assert '<prop type="status">approved</prop>' in out.read_text(encoding="utf-8")
+
+
+def test_parse_tmx_props():
+    unit = ET.fromstring('<tu><prop type="status">approved</prop></tu>')
+    assert parse_tmx_props(unit) == {"status": "approved"}
