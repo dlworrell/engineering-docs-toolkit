@@ -1,6 +1,6 @@
 import sqlite3
 
-from edt.translation_memory import add_term, has_term, init_memory, lookup_term
+from edt.translation_memory import add_term, add_term_pair, has_term, init_memory, lookup_term
 
 
 def test_translation_memory_add_term(tmp_path):
