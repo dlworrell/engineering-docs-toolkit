@@ -22,3 +22,9 @@ def test_heading_jumps():
     root.add(EdomNode(kind="heading1", text="A"))
     root.add(EdomNode(kind="heading3", text="B"))
     assert heading_jumps(root) == ["B"]
+
+
+def test_reference_targets():
+    root = EdomNode(kind="document")
+    root.add(EdomNode(kind="reference", text="x"))
+    assert reference_targets(root) == ["x"]
