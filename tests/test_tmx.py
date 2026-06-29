@@ -128,3 +128,8 @@ def test_parse_tmx_namespaced_units(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text('<tmx xmlns="urn:test"><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
     assert parse_tmx_units(source) == [("A", "B")]
+
+
+def test_segment_text_reads_namespaced_seg():
+    tuv = ET.fromstring('<tuv xmlns="urn:test"><seg>A</seg></tuv>')
+    assert segment_text(tuv) == "A"
