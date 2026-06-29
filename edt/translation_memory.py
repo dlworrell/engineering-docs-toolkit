@@ -5,12 +5,17 @@ from pathlib import Path
 def init_memory(path: Path) -> None:
     with sqlite3.connect(path) as db:
         db.execute("create table if not exists terms (source text, target text, note text)")
+        columns = {row[1] for row in db.execute("pragma table_info(terms)").fetchall()}
+        if "source_lang" not in columns:
+            db.execute("alter table terms add column source_lang text default ''")
+        if "target_lang" not in columns:
+            db.execute("alter table terms add column target_lang text default ''")
 
 
 def add_term(path: Path, source: str, target: str, note: str = "") -> None:
     init_memory(path)
     with sqlite3.connect(path) as db:
-        db.execute("insert into terms values (?, ?, ?)", (source, target, note))
+        db.execute("insert into terms (source, target, note) values (?, ?, ?)", (source, target, note))
 
 
 def lookup_term(path: Path, source: str) -> str | None:
