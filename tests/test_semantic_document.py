@@ -30,3 +30,12 @@ def test_semantic_document_infers_proof_relationships():
     doc = SemanticDocument(pages=[semantic_page_from_layout(page)])
     relationships = doc.infer_relationships()
     assert relationships[0].relationship == "has_proof"
+
+
+def test_semantic_document_resolves_reference_relationships():
+    page = LayoutPage(page_number=1)
+    page.add_block(LayoutBlock(block_id="eq1", kind="equation", text="x = 1 (2.3)"))
+    page.add_block(LayoutBlock(block_id="p1", kind="paragraph", text="Equation (2.3) is used here."))
+    doc = SemanticDocument(pages=[semantic_page_from_layout(page)])
+    relationships = doc.infer_relationships()
+    assert any(rel.relationship == "references" and rel.target_id == "eq1" for rel in relationships)
