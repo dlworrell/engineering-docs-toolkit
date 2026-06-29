@@ -72,3 +72,7 @@ def test_validate_tmx_segments(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text("<tmx><body><tu /></body></tmx>", encoding="utf-8")
     assert validate_tmx(source) == ["missing-seg"]
+
+
+def test_tmx_property_writer():
+    assert tmx_prop("status", "approved") == '<prop type="status">approved</prop>'
