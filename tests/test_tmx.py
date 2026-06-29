@@ -1,4 +1,5 @@
 from xml.etree import ElementTree as ET
+import sqlite3
 
 from edt.tmx import export_tmx, import_tmx, parse_tmx_props, parse_tmx_units, parse_tmx_units_with_props, tmx_date, tmx_header, tmx_lang, tmx_prop, validate_tmx
 from edt.translation_memory import add_reviewed_term, add_term_pair, lookup_term
@@ -95,3 +96,13 @@ def test_parse_tmx_units_with_props(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text('<tmx><body><tu><prop type="status">approved</prop><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
     assert parse_tmx_units_with_props(source) == [("A", "B", {"status": "approved"})]
+
+
+def test_import_tmx_metadata(tmp_path):
+    source = tmp_path / "source.tmx"
+    db = tmp_path / "memory.sqlite"
+    source.write_text('<tmx><body><tu><prop type="status">approved</prop><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
+    import_tmx(source, db)
+    with sqlite3.connect(db) as conn:
+        rows = conn.execute("select status from terms").fetchall()
+    assert rows == [("approved",)]
