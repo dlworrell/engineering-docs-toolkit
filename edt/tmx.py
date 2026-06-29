@@ -44,6 +44,11 @@ def parse_tmx_units(tmx_path: Path) -> list[tuple[str, str]]:
     return [(tu[0].findtext("seg", ""), tu[1].findtext("seg", "")) for tu in root.findall(".//tu") if len(tu) >= 2]
 
 
+def parse_tmx_units_with_props(tmx_path: Path) -> list[tuple[str, str, dict[str, str]]]:
+    root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
+    return [(tu[0].findtext("seg", ""), tu[1].findtext("seg", ""), parse_tmx_props(tu)) for tu in root.findall(".//tu") if len(tu) >= 2]
+
+
 def validate_tmx(tmx_path: Path) -> list[str]:
     root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
     issues: list[str] = []
