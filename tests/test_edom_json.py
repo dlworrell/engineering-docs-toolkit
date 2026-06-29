@@ -27,3 +27,9 @@ def test_dict_to_node():
 def test_dict_to_node_children():
     data = {"id": "x", "kind": "document", "children": [{"id": "y", "kind": "paragraph"}]}
     assert len(dict_to_node(data).children) == 1
+
+
+def test_read_edom_json(tmp_path):
+    path = tmp_path / "edom.json"
+    path.write_text('{"id":"x","kind":"document"}', encoding="utf-8")
+    assert read_edom_json(path).node_id == "x"
