@@ -1,7 +1,7 @@
 from xml.etree import ElementTree as ET
 
 from edt.tmx import export_tmx, import_tmx, parse_tmx_units, tmx_date, tmx_header, tmx_lang, tmx_prop, validate_tmx
-from edt.translation_memory import add_term_pair, lookup_term
+from edt.translation_memory import add_reviewed_term, add_term_pair, lookup_term
 
 
 def test_export_tmx(tmp_path):
@@ -76,3 +76,11 @@ def test_validate_tmx_segments(tmp_path):
 
 def test_tmx_property_writer():
     assert tmx_prop("status", "approved") == '<prop type="status">approved</prop>'
+
+
+def test_export_tmx_metadata_props(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    out = tmp_path / "memory.tmx"
+    add_reviewed_term(db, "A", "B", "D", "approved")
+    export_tmx(db, out)
+    assert '<prop type="status">approved</prop>' in out.read_text(encoding="utf-8")
