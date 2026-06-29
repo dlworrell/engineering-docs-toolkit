@@ -15,3 +15,6 @@ class BuildGraph:
 
     def upstream_of(self, node_id: str) -> set[str]:
         return set(self.edges.get(node_id, set()))
+
+    def downstream_of(self, upstream_id: str) -> set[str]:
+        return {node for node, upstream in self.edges.items() if upstream_id in upstream}
