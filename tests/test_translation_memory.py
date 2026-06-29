@@ -73,3 +73,11 @@ def test_quality_columns(tmp_path):
     with sqlite3.connect(db) as conn:
         names = [row[1] for row in conn.execute("pragma table_info(terms)")]
     assert "confidence" in names
+
+
+def test_add_quality_term(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    add_quality_term(db, "A", "B", 0.9, "mt")
+    with sqlite3.connect(db) as conn:
+        rows = conn.execute("select confidence, origin from terms").fetchall()
+    assert rows == [(0.9, "mt")]
