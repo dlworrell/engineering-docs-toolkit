@@ -54,3 +54,9 @@ def test_tmx_header_dates():
 def test_tmx_header_required_attrs():
     header = tmx_header()
     assert "o-tmf" in header
+
+
+def test_validate_tmx_ok(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text("<tmx><body /></tmx>", encoding="utf-8")
+    assert validate_tmx(source) == []
