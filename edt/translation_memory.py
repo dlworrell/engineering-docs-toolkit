@@ -18,6 +18,12 @@ def add_term(path: Path, source: str, target: str, note: str = "") -> None:
         db.execute("insert into terms (source, target, note) values (?, ?, ?)", (source, target, note))
 
 
+def add_term_pair(path: Path, source: str, target: str, source_lang: str, target_lang: str) -> None:
+    init_memory(path)
+    with sqlite3.connect(path) as db:
+        db.execute("insert into terms (source, target, source_lang, target_lang) values (?, ?, ?, ?)", (source, target, source_lang, target_lang))
+
+
 def lookup_term(path: Path, source: str) -> str | None:
     init_memory(path)
     with sqlite3.connect(path) as db:
