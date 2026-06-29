@@ -21,3 +21,12 @@ def test_semantic_page_from_layout_adds_equation_metadata():
     page.add_block(LayoutBlock(block_id="eq1", kind="equation", text="x = 1 (2.3)"))
     semantic = semantic_page_from_layout(page)
     assert semantic.blocks[0].metadata["equation_number"] == "2.3"
+
+
+def test_semantic_document_infers_proof_relationships():
+    page = LayoutPage(page_number=1)
+    page.add_block(LayoutBlock(block_id="thm1", kind="paragraph", text="Theorem. A result."))
+    page.add_block(LayoutBlock(block_id="proof1", kind="paragraph", text="Proof. Therefore."))
+    doc = SemanticDocument(pages=[semantic_page_from_layout(page)])
+    relationships = doc.infer_relationships()
+    assert relationships[0].relationship == "has_proof"
