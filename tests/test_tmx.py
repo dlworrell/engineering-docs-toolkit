@@ -151,3 +151,9 @@ def test_duplicate_tuv_uses_first_two(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text('<tmx><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv><tuv><seg>C</seg></tuv></tu></body></tmx>', encoding="utf-8")
     assert parse_tmx_units(source) == [("A", "B")]
+
+
+def test_empty_segments_are_preserved(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text('<tmx><body><tu><tuv><seg /></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
+    assert parse_tmx_units(source) == [("", "B")]
