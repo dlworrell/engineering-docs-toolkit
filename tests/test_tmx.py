@@ -118,3 +118,7 @@ def test_metadata_round_trip(tmp_path):
     with sqlite3.connect(target_db) as conn:
         rows = conn.execute("select reviewer, status from terms").fetchall()
     assert rows == [("D", "approved")]
+
+
+def test_xml_name_strips_namespace():
+    assert xml_name("{urn:test}tu") == "tu"
