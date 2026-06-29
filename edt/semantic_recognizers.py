@@ -15,6 +15,8 @@ PREFIX_KIND = {
     "section": "section",
     "bibliography": "bibliography",
     "index": "index",
+    "listing": "code_listing",
+    "citation": "citation",
 }
 
 
@@ -26,6 +28,9 @@ KIND_KIND = {
     "table": "table",
     "figure": "figure",
     "equation": "equation",
+    "code": "code_listing",
+    "quotation": "quotation",
+    "quote": "quotation",
 }
 
 
