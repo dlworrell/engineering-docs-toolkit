@@ -17,3 +17,8 @@ def round_trip(tmp_path, text: str) -> str:
 
 def test_tmx_round_trips_emoji(tmp_path):
     assert round_trip(tmp_path, "wrench 🔧") == "wrench 🔧"
+
+
+def test_tmx_round_trips_supplementary_plane(tmp_path):
+    text = "supplementary " + chr(0x1D11E)
+    assert round_trip(tmp_path, text) == text
