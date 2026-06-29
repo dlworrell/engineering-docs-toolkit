@@ -1,9 +1,14 @@
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
 from .translation_memory import add_term, init_memory
+
+
+def tmx_date() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
 def tmx_header(source_lang: str = "und") -> str:
