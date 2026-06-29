@@ -4,7 +4,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
-from .translation_memory import add_term, init_memory
+from .translation_memory import init_memory
 
 
 def tmx_date() -> str:
@@ -64,5 +64,6 @@ def validate_tmx(tmx_path: Path) -> list[str]:
 
 def import_tmx(tmx_path: Path, db_path: Path) -> None:
     init_memory(db_path)
-    for source, target in parse_tmx_units(tmx_path):
-        add_term(db_path, source, target)
+    with sqlite3.connect(db_path) as db:
+        for source, target, props in parse_tmx_units_with_props(tmx_path):
+            db.execute("insert into terms (source, target, reviewer, status, confidence, origin, reviewed_at) values (?, ?, ?, ?, ?, ?, ?)", (source, target, props.get("reviewer", ""), props.get("status", ""), float(props.get("confidence", 0) or 0), props.get("origin", ""), props.get("reviewed_at", "")))
