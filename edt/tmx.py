@@ -51,8 +51,13 @@ def export_tmx(db_path: Path, out_path: Path) -> None:
     out_path.write_text("<tmx version=\"1.4\">" + tmx_header() + "<body>" + "".join(body) + "</body></tmx>\n", encoding="utf-8")
 
 
+def segment_text(tuv: ET.Element) -> str:
+    segments = child_elements(tuv, "seg")
+    return "" if not segments else "".join(segments[0].itertext())
+
+
 def unit_segments(unit: ET.Element) -> list[str]:
-    return [tuv.findtext("seg", "") for tuv in child_elements(unit, "tuv")]
+    return [segment_text(tuv) for tuv in child_elements(unit, "tuv")]
 
 
 def parse_tmx_units(tmx_path: Path) -> list[tuple[str, str]]:
