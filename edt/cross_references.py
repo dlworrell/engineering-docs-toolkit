@@ -5,6 +5,15 @@ from dataclasses import dataclass
 REFERENCE_RE = re.compile(r"\b(?P<kind>Eq\.|Equation|Figure|Table|Theorem)\s*\(?(?P<number>\d+(?:\.\d+)*)\)?", re.IGNORECASE)
 
 
+KIND_TARGETS = {
+    "eq.": "equation",
+    "equation": "equation",
+    "figure": "figure",
+    "table": "table",
+    "theorem": "theorem",
+}
+
+
 @dataclass(frozen=True)
 class CrossReference:
     kind: str
@@ -12,9 +21,12 @@ class CrossReference:
     text: str
 
     @property
+    def target_kind(self) -> str:
+        return KIND_TARGETS[self.kind.lower()]
+
+    @property
     def target_id(self) -> str:
-        normalized = "equation" if self.kind.lower() in {"eq.", "equation"} else self.kind.lower()
-        return f"{normalized}:{self.number}"
+        return f"{self.target_kind}:{self.number}"
 
 
 def find_cross_references(text: str) -> list[CrossReference]:
