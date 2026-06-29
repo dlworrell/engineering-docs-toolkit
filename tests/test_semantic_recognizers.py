@@ -30,3 +30,13 @@ def test_recognize_lemma_prefix():
 def test_recognize_corollary_prefix():
     block = LayoutBlock(block_id="cor1", kind="paragraph", text="Corollary 2.1")
     assert recognize_semantic_kind(block) == "corollary"
+
+
+def test_recognize_title_kind():
+    block = LayoutBlock(block_id="title", kind="title", text="Algebra")
+    assert recognize_semantic_kind(block) == "title"
+
+
+def test_recognize_author_kind():
+    block = LayoutBlock(block_id="author", kind="author", text="A. Author")
+    assert recognize_semantic_kind(block) == "author"
