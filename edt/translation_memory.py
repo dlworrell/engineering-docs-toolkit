@@ -10,6 +10,10 @@ def init_memory(path: Path) -> None:
             db.execute("alter table terms add column source_lang text default ''")
         if "target_lang" not in columns:
             db.execute("alter table terms add column target_lang text default ''")
+        if "reviewer" not in columns:
+            db.execute("alter table terms add column reviewer text default ''")
+        if "status" not in columns:
+            db.execute("alter table terms add column status text default ''")
 
 
 def add_term(path: Path, source: str, target: str, note: str = "") -> None:
