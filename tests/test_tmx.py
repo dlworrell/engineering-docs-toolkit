@@ -122,3 +122,9 @@ def test_metadata_round_trip(tmp_path):
 
 def test_xml_name_strips_namespace():
     assert xml_name("{urn:test}tu") == "tu"
+
+
+def test_parse_tmx_namespaced_units(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text('<tmx xmlns="urn:test"><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
+    assert parse_tmx_units(source) == [("A", "B")]
