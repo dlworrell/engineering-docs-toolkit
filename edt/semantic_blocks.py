@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .layout_model import LayoutBlock
 
@@ -9,6 +9,7 @@ class SemanticBlock:
     semantic_kind: str
     text: str
     source_kind: str = ""
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 def semantic_block_from_layout(block: LayoutBlock, semantic_kind: str) -> SemanticBlock:
