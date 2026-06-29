@@ -20,6 +20,10 @@ def tmx_lang(element: ET.Element) -> str:
     return element.attrib.get("{http://www.w3.org/XML/1998/namespace}lang", element.attrib.get("lang", "und"))
 
 
+def tmx_prop(name: str, value: str) -> str:
+    return f'<prop type="{escape(name)}">{escape(value)}</prop>'
+
+
 def export_tmx(db_path: Path, out_path: Path) -> None:
     init_memory(db_path)
     with sqlite3.connect(db_path) as db:
