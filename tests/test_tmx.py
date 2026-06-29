@@ -89,3 +89,9 @@ def test_export_tmx_metadata_props(tmp_path):
 def test_parse_tmx_props():
     unit = ET.fromstring('<tu><prop type="status">approved</prop></tu>')
     assert parse_tmx_props(unit) == {"status": "approved"}
+
+
+def test_parse_tmx_units_with_props(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text('<tmx><body><tu><prop type="status">approved</prop><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
+    assert parse_tmx_units_with_props(source) == [("A", "B", {"status": "approved"})]
