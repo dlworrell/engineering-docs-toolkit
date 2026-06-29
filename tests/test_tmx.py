@@ -1,4 +1,4 @@
-from edt.tmx import export_tmx, import_tmx, parse_tmx_units
+from edt.tmx import export_tmx, import_tmx, parse_tmx_units, tmx_header
 from edt.translation_memory import add_term_pair, lookup_term
 
 
