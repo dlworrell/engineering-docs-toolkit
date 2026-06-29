@@ -36,3 +36,8 @@ def test_import_tmx_stores_units(tmp_path):
 
 def test_tmx_header_builder():
     assert "creationtool" in tmx_header("sv-SE")
+
+
+def test_tmx_language_reader():
+    element = ET.fromstring('<tuv xml:lang="en-US" />')
+    assert tmx_lang(element) == "en-US"
