@@ -28,3 +28,9 @@ def test_reference_targets():
     root = EdomNode(kind="document")
     root.add(EdomNode(kind="reference", text="x"))
     assert reference_targets(root) == ["x"]
+
+
+def test_missing_references():
+    root = EdomNode(kind="document", node_id="root")
+    root.add(EdomNode(kind="reference", text="missing"))
+    assert missing_references(root) == ["missing"]
