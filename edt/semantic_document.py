@@ -5,7 +5,7 @@ from .reading_order import top_left_order
 from .semantic_blocks import SemanticBlock
 from .semantic_metadata import semantic_block_with_metadata
 from .semantic_recognizers import recognize_semantic_kind
-from .semantic_relationships import SemanticRelationship, link_adjacent_proofs
+from .semantic_relationships import SemanticRelationship, infer_semantic_relationships
 
 
 @dataclass
@@ -24,7 +24,7 @@ class SemanticDocument:
         return [block for page in self.pages for block in page.blocks]
 
     def infer_relationships(self) -> list[SemanticRelationship]:
-        self.relationships = link_adjacent_proofs(self.blocks)
+        self.relationships = infer_semantic_relationships(self.blocks)
         return self.relationships
 
 
