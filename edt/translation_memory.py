@@ -40,6 +40,12 @@ def add_reviewed_term(path: Path, source: str, target: str, reviewer: str, statu
         db.execute("insert into terms (source, target, reviewer, status) values (?, ?, ?, ?)", (source, target, reviewer, status))
 
 
+def add_quality_term(path: Path, source: str, target: str, confidence: float, origin: str) -> None:
+    init_memory(path)
+    with sqlite3.connect(path) as db:
+        db.execute("insert into terms (source, target, confidence, origin) values (?, ?, ?, ?)", (source, target, confidence, origin))
+
+
 def lookup_term(path: Path, source: str) -> str | None:
     init_memory(path)
     with sqlite3.connect(path) as db:
