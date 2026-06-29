@@ -15,3 +15,10 @@ def test_duplicate_ids_detected():
 
 def test_heading_level():
     assert heading_level("heading2") == 2
+
+
+def test_heading_jumps():
+    root = EdomNode(kind="document")
+    root.add(EdomNode(kind="heading1", text="A"))
+    root.add(EdomNode(kind="heading3", text="B"))
+    assert heading_jumps(root) == ["B"]
