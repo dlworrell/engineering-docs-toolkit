@@ -35,5 +35,14 @@ def link_adjacent_captions(blocks: list[SemanticBlock]) -> list[SemanticRelation
     return relationships
 
 
+def link_equation_numbers(blocks: list[SemanticBlock]) -> list[SemanticRelationship]:
+    relationships: list[SemanticRelationship] = []
+    for block in blocks:
+        number = block.metadata.get("equation_number", "")
+        if block.semantic_kind == "equation" and number:
+            relationships.append(SemanticRelationship(block.block_id, f"equation-number:{number}", "has_number"))
+    return relationships
+
+
 def infer_semantic_relationships(blocks: list[SemanticBlock]) -> list[SemanticRelationship]:
-    return link_adjacent_proofs(blocks) + link_adjacent_captions(blocks)
+    return link_adjacent_proofs(blocks) + link_adjacent_captions(blocks) + link_equation_numbers(blocks)
