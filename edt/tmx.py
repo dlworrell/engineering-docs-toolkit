@@ -3,7 +3,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 
-from .translation_memory import init_memory
+from .translation_memory import add_term, init_memory
 
 
 def export_tmx(db_path: Path, out_path: Path) -> None:
@@ -23,4 +23,5 @@ def parse_tmx_units(tmx_path: Path) -> list[tuple[str, str]]:
 
 def import_tmx(tmx_path: Path, db_path: Path) -> None:
     init_memory(db_path)
-    tmx_path.read_text(encoding="utf-8")
+    for source, target in parse_tmx_units(tmx_path):
+        add_term(db_path, source, target)
