@@ -16,3 +16,9 @@ def test_import_tmx_skeleton(tmp_path):
     source.write_text("<tmx><body /></tmx>", encoding="utf-8")
     import_tmx(source, db)
     assert db.exists()
+
+
+def test_parse_tmx_units(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text("<tmx><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>", encoding="utf-8")
+    assert parse_tmx_units(source) == [("A", "B")]
