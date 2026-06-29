@@ -35,6 +35,14 @@ def parse_tmx_units(tmx_path: Path) -> list[tuple[str, str]]:
     return [(tu[0].findtext("seg", ""), tu[1].findtext("seg", "")) for tu in root.findall(".//tu") if len(tu) >= 2]
 
 
+def validate_tmx(tmx_path: Path) -> list[str]:
+    root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
+    issues: list[str] = []
+    if root.tag != "tmx":
+        issues.append("root-not-tmx")
+    return issues
+
+
 def import_tmx(tmx_path: Path, db_path: Path) -> None:
     init_memory(db_path)
     for source, target in parse_tmx_units(tmx_path):
