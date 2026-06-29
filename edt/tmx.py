@@ -24,6 +24,10 @@ def child_elements(element: ET.Element, name: str) -> list[ET.Element]:
     return [child for child in list(element) if xml_name(child.tag) == name]
 
 
+def descendant_elements(element: ET.Element, name: str) -> list[ET.Element]:
+    return [child for child in element.iter() if xml_name(child.tag) == name]
+
+
 def tmx_lang(element: ET.Element) -> str:
     return element.attrib.get("{http://www.w3.org/XML/1998/namespace}lang", element.attrib.get("lang", "und"))
 
@@ -47,14 +51,18 @@ def export_tmx(db_path: Path, out_path: Path) -> None:
     out_path.write_text("<tmx version=\"1.4\">" + tmx_header() + "<body>" + "".join(body) + "</body></tmx>\n", encoding="utf-8")
 
 
+def unit_segments(unit: ET.Element) -> list[str]:
+    return [tuv.findtext("seg", "") for tuv in child_elements(unit, "tuv")]
+
+
 def parse_tmx_units(tmx_path: Path) -> list[tuple[str, str]]:
     root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
-    return [(tu[0].findtext("seg", ""), tu[1].findtext("seg", "")) for tu in root.findall(".//tu") if len(tu) >= 2]
+    return [(segments[0], segments[1]) for tu in descendant_elements(root, "tu") if len(segments := unit_segments(tu)) >= 2]
 
 
 def parse_tmx_units_with_props(tmx_path: Path) -> list[tuple[str, str, dict[str, str]]]:
     root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
-    return [(tu[0].findtext("seg", ""), tu[1].findtext("seg", ""), parse_tmx_props(tu)) for tu in root.findall(".//tu") if len(tu) >= 2]
+    return [(segments[0], segments[1], parse_tmx_props(tu)) for tu in descendant_elements(root, "tu") if len(segments := unit_segments(tu)) >= 2]
 
 
 def validate_tmx(tmx_path: Path) -> list[str]:
