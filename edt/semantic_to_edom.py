@@ -1,4 +1,6 @@
 from .edom import EdomNode
+from .edom_reference_metadata import add_reference_metadata
+from .reference_exports import resolved_links_from_relationships
 from .semantic_blocks import SemanticBlock
 from .semantic_document import SemanticDocument, SemanticPage
 
@@ -34,4 +36,5 @@ def semantic_document_to_edom(document: SemanticDocument) -> EdomNode:
     root = EdomNode(kind="document", node_id="document")
     for page in document.pages:
         root.add(semantic_page_to_edom(page))
+    add_reference_metadata(root, resolved_links_from_relationships(document.relationships))
     return root
