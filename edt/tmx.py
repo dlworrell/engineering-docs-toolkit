@@ -10,6 +10,10 @@ def tmx_header(source_lang: str = "und") -> str:
     return f'<header creationtool="engineering-docs-toolkit" creationtoolversion="0" datatype="PlainText" segtype="sentence" adminlang="en" srclang="{escape(source_lang)}" />'
 
 
+def tmx_lang(element: ET.Element) -> str:
+    return element.attrib.get("{http://www.w3.org/XML/1998/namespace}lang", element.attrib.get("lang", "und"))
+
+
 def export_tmx(db_path: Path, out_path: Path) -> None:
     init_memory(db_path)
     with sqlite3.connect(db_path) as db:
