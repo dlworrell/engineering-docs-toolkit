@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from .cross_references import find_cross_references
 from .semantic_blocks import SemanticBlock
 
 
@@ -44,5 +45,13 @@ def link_equation_numbers(blocks: list[SemanticBlock]) -> list[SemanticRelations
     return relationships
 
 
+def link_cross_references(blocks: list[SemanticBlock]) -> list[SemanticRelationship]:
+    relationships: list[SemanticRelationship] = []
+    for block in blocks:
+        for reference in find_cross_references(block.text):
+            relationships.append(SemanticRelationship(block.block_id, reference.target_id, "references"))
+    return relationships
+
+
 def infer_semantic_relationships(blocks: list[SemanticBlock]) -> list[SemanticRelationship]:
-    return link_adjacent_proofs(blocks) + link_adjacent_captions(blocks) + link_equation_numbers(blocks)
+    return link_adjacent_proofs(blocks) + link_adjacent_captions(blocks) + link_equation_numbers(blocks) + link_cross_references(blocks)
