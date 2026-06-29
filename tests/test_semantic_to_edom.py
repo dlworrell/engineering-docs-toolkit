@@ -9,3 +9,11 @@ def test_semantic_document_to_edom_preserves_semantic_kind():
     document = SemanticDocument(pages=[semantic_page_from_layout(page)])
     edom = semantic_document_to_edom(document)
     assert edom.children[0].children[0].kind == "theorem"
+
+
+def test_semantic_document_to_edom_preserves_metadata():
+    page = LayoutPage(page_number=1)
+    page.add_block(LayoutBlock(block_id="eq1", kind="equation", text="x = 1 (2.3)"))
+    document = SemanticDocument(pages=[semantic_page_from_layout(page)])
+    edom = semantic_document_to_edom(document)
+    assert edom.children[0].children[0].metadata["equation_number"] == "2.3"
