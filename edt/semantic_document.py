@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 
 from .layout_model import LayoutPage
 from .reading_order import top_left_order
-from .semantic_blocks import SemanticBlock, semantic_block_from_layout
+from .semantic_blocks import SemanticBlock
+from .semantic_metadata import semantic_block_with_metadata
 from .semantic_recognizers import recognize_semantic_kind
 
 
@@ -25,5 +26,5 @@ def semantic_page_from_layout(page: LayoutPage) -> SemanticPage:
     semantic = SemanticPage(page_number=page.page_number)
     for block in top_left_order(page.blocks):
         kind = recognize_semantic_kind(block)
-        semantic.blocks.append(semantic_block_from_layout(block, kind))
+        semantic.blocks.append(semantic_block_with_metadata(block, kind))
     return semantic
