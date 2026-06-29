@@ -1,5 +1,5 @@
 from edt.edom import EdomNode
-from edt.edom_validate import duplicate_ids, heading_jumps, heading_level
+from edt.edom_validate import duplicate_ids, heading_jumps, heading_level, reference_targets
 
 
 def test_duplicate_ids_empty():
