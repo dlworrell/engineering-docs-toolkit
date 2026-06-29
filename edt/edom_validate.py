@@ -38,3 +38,8 @@ def heading_jumps(root: EdomNode) -> list[str]:
 
 def reference_targets(root: EdomNode) -> list[str]:
     return [node.text for node in preorder(root) if node.kind == "reference"]
+
+
+def missing_references(root: EdomNode) -> list[str]:
+    ids = {node.node_id for node in preorder(root)}
+    return [target for target in reference_targets(root) if target not in ids]
