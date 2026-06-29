@@ -4,6 +4,9 @@ from .layout_model import LayoutBlock
 PREFIX_KIND = {
     "definition": "definition",
     "theorem": "theorem",
+    "lemma": "lemma",
+    "corollary": "corollary",
+    "proposition": "proposition",
     "proof": "proof",
     "example": "example",
     "exercise": "exercise",
