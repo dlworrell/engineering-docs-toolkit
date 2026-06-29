@@ -41,3 +41,7 @@ def test_tmx_header_builder():
 def test_tmx_language_reader():
     element = ET.fromstring('<tuv xml:lang="en-US" />')
     assert tmx_lang(element) == "en-US"
+
+
+def test_tmx_date_helper():
+    assert tmx_date().endswith("Z")
