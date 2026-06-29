@@ -28,3 +28,8 @@ def test_tmx_round_trips_unicode_mark_sequence(tmp_path):
     mark = "\\u0301".encode("ascii").decode("unicode_escape")
     text = "unicode e" + mark
     assert round_trip(tmp_path, text) == text
+
+
+def test_tmx_round_trips_rtl_text(tmp_path):
+    text = "rtl " + "".join(chr(code) for code in [0x05E9, 0x05DC, 0x05D5, 0x05DD])
+    assert round_trip(tmp_path, text) == text
