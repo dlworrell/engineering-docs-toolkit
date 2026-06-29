@@ -45,3 +45,7 @@ def test_tmx_language_reader():
 
 def test_tmx_date_helper():
     assert tmx_date().endswith("Z")
+
+
+def test_tmx_header_dates():
+    assert "creationdate" in tmx_header()
