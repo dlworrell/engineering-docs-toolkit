@@ -1,7 +1,7 @@
 from xml.etree import ElementTree as ET
 import sqlite3
 
-from edt.tmx import child_elements, export_tmx, import_tmx, parse_tmx_props, parse_tmx_units, parse_tmx_units_with_props, tmx_date, tmx_header, tmx_lang, tmx_prop, validate_tmx, xml_name
+from edt.tmx import child_elements, export_tmx, import_tmx, parse_tmx_props, parse_tmx_units, parse_tmx_units_with_props, segment_text, tmx_date, tmx_header, tmx_lang, tmx_prop, validate_tmx, xml_name
 from edt.translation_memory import add_reviewed_term, add_term_pair, lookup_term
 
 
