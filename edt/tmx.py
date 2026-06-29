@@ -27,10 +27,11 @@ def tmx_prop(name: str, value: str) -> str:
 def export_tmx(db_path: Path, out_path: Path) -> None:
     init_memory(db_path)
     with sqlite3.connect(db_path) as db:
-        rows = db.execute("select source, target, source_lang, target_lang from terms").fetchall()
+        rows = db.execute("select source, target, source_lang, target_lang, reviewer, status, confidence, origin, reviewed_at from terms").fetchall()
     body = []
-    for source, target, source_lang, target_lang in rows:
-        body.append(f'<tu><tuv xml:lang="{escape(source_lang or "und")}"><seg>{escape(source)}</seg></tuv><tuv xml:lang="{escape(target_lang or "und")}"><seg>{escape(target)}</seg></tuv></tu>')
+    for source, target, source_lang, target_lang, reviewer, status, confidence, origin, reviewed_at in rows:
+        props = "".join(tmx_prop(k, str(v)) for k, v in {"reviewer": reviewer, "status": status, "confidence": confidence, "origin": origin, "reviewed_at": reviewed_at}.items() if v not in (None, "", 0))
+        body.append(f'<tu>{props}<tuv xml:lang="{escape(source_lang or "und")}"><seg>{escape(source)}</seg></tuv><tuv xml:lang="{escape(target_lang or "und")}"><seg>{escape(target)}</seg></tuv></tu>')
     out_path.write_text("<tmx version=\"1.4\">" + tmx_header() + "<body>" + "".join(body) + "</body></tmx>\n", encoding="utf-8")
 
 
