@@ -42,6 +42,9 @@ def validate_tmx(tmx_path: Path) -> list[str]:
         issues.append("root-not-tmx")
     if root.find("body") is None:
         issues.append("missing-body")
+    for tu in root.findall(".//tu"):
+        if not tu.findall(".//seg"):
+            issues.append("missing-seg")
     return issues
 
 
