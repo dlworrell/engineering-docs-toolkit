@@ -40,6 +40,8 @@ def validate_tmx(tmx_path: Path) -> list[str]:
     issues: list[str] = []
     if root.tag != "tmx":
         issues.append("root-not-tmx")
+    if root.find("body") is None:
+        issues.append("missing-body")
     return issues
 
 
