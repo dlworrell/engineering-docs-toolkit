@@ -49,3 +49,8 @@ def test_tmx_date_helper():
 
 def test_tmx_header_dates():
     assert "creationdate" in tmx_header()
+
+
+def test_tmx_header_required_attrs():
+    header = tmx_header()
+    assert "o-tmf" in header
