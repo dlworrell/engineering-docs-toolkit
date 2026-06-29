@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from .layout_model import LayoutPage
 from .reading_order import top_left_order
+from .reference_resolver import resolve_reference_relationships
 from .semantic_blocks import SemanticBlock
 from .semantic_metadata import semantic_block_with_metadata
 from .semantic_recognizers import recognize_semantic_kind
@@ -24,7 +25,8 @@ class SemanticDocument:
         return [block for page in self.pages for block in page.blocks]
 
     def infer_relationships(self) -> list[SemanticRelationship]:
-        self.relationships = infer_semantic_relationships(self.blocks)
+        inferred = infer_semantic_relationships(self.blocks)
+        self.relationships = resolve_reference_relationships(self.blocks, inferred)
         return self.relationships
 
 
