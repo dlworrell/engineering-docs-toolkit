@@ -139,3 +139,9 @@ def test_validate_malformed_tmx(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text("<tmx><body>", encoding="utf-8")
     assert validate_tmx(source)[0].startswith("malformed TMX XML:")
+
+
+def test_tmx_comments_are_ignored(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text('<tmx><body><!-- comment --><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>', encoding="utf-8")
+    assert parse_tmx_units(source) == [("A", "B")]
