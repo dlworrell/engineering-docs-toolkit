@@ -31,5 +31,12 @@ def lookup_term(path: Path, source: str) -> str | None:
     return None if row is None else str(row[0])
 
 
+def lookup_term_pair(path: Path, source: str, source_lang: str, target_lang: str) -> str | None:
+    init_memory(path)
+    with sqlite3.connect(path) as db:
+        row = db.execute("select target from terms where source = ? and source_lang = ? and target_lang = ? limit 1", (source, source_lang, target_lang)).fetchone()
+    return None if row is None else str(row[0])
+
+
 def has_term(path: Path, source: str) -> bool:
     return lookup_term(path, source) is not None
