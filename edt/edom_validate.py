@@ -14,3 +14,9 @@ def duplicate_ids(root: EdomNode) -> list[str]:
 
     visit(root)
     return duplicates
+
+
+def heading_level(kind: str) -> int | None:
+    if kind.startswith("heading") and kind[7:].isdigit():
+        return int(kind[7:])
+    return None
