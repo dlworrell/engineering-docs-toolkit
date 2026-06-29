@@ -49,3 +49,11 @@ def test_lookup_term_pair(tmp_path):
     db = tmp_path / "memory.sqlite"
     add_term_pair(db, "A", "B", "sv", "en")
     assert lookup_term_pair(db, "A", "sv", "en") == "B"
+
+
+def test_review_columns(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    init_memory(db)
+    with sqlite3.connect(db) as conn:
+        names = [row[1] for row in conn.execute("pragma table_info(terms)")]
+    assert "reviewer" in names
