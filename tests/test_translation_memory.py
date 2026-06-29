@@ -43,3 +43,9 @@ def test_add_term_pair(tmp_path):
     with sqlite3.connect(db) as conn:
         rows = conn.execute("select source_lang, target_lang from terms").fetchall()
     assert rows == [("sv", "en")]
+
+
+def test_lookup_term_pair(tmp_path):
+    db = tmp_path / "memory.sqlite"
+    add_term_pair(db, "A", "B", "sv", "en")
+    assert lookup_term_pair(db, "A", "sv", "en") == "B"
