@@ -5,6 +5,7 @@ from .reading_order import top_left_order
 from .semantic_blocks import SemanticBlock
 from .semantic_metadata import semantic_block_with_metadata
 from .semantic_recognizers import recognize_semantic_kind
+from .semantic_relationships import SemanticRelationship, link_adjacent_proofs
 
 
 @dataclass
@@ -16,10 +17,15 @@ class SemanticPage:
 @dataclass
 class SemanticDocument:
     pages: list[SemanticPage] = field(default_factory=list)
+    relationships: list[SemanticRelationship] = field(default_factory=list)
 
     @property
     def blocks(self) -> list[SemanticBlock]:
         return [block for page in self.pages for block in page.blocks]
+
+    def infer_relationships(self) -> list[SemanticRelationship]:
+        self.relationships = link_adjacent_proofs(self.blocks)
+        return self.relationships
 
 
 def semantic_page_from_layout(page: LayoutPage) -> SemanticPage:
