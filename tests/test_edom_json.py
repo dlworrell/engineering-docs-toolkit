@@ -17,3 +17,8 @@ def test_node_to_dict_children():
     node.add(EdomNode(kind="paragraph"))
     data = node_to_dict(node)
     assert len(data["children"]) == 1
+
+
+def test_dict_to_node():
+    node = dict_to_node({"id": "x", "kind": "document", "text": "Book"})
+    assert node.node_id == "x"
