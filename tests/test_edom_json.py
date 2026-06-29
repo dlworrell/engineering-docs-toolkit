@@ -22,3 +22,8 @@ def test_node_to_dict_children():
 def test_dict_to_node():
     node = dict_to_node({"id": "x", "kind": "document", "text": "Book"})
     assert node.node_id == "x"
+
+
+def test_dict_to_node_children():
+    data = {"id": "x", "kind": "document", "children": [{"id": "y", "kind": "paragraph"}]}
+    assert len(dict_to_node(data).children) == 1
