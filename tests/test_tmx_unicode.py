@@ -43,3 +43,8 @@ def test_tmx_round_trips_mathematical_alphabet(tmp_path):
 def test_tmx_round_trips_ipa(tmp_path):
     text = "ipa " + "".join(chr(code) for code in [0x026A, 0x0283, 0x0259])
     assert round_trip(tmp_path, text) == text
+
+
+def test_tmx_round_trips_cjk(tmp_path):
+    text = "cjk " + "".join(chr(code) for code in [0x6F22, 0x5B57, 0x6587])
+    assert round_trip(tmp_path, text) == text
