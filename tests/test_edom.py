@@ -12,3 +12,10 @@ def test_edom_child_changes_fingerprint():
     before = node.fingerprint
     node.add(EdomNode(kind="paragraph", text="body"))
     assert node.fingerprint != before
+
+
+def test_edom_metadata_changes_fingerprint():
+    node = EdomNode(kind="equation", text="x = 1")
+    before = node.fingerprint
+    node.metadata["equation_number"] = "2.3"
+    assert node.fingerprint != before
