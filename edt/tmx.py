@@ -28,6 +28,13 @@ def descendant_elements(element: ET.Element, name: str) -> list[ET.Element]:
     return [child for child in element.iter() if xml_name(child.tag) == name]
 
 
+def read_tmx_root(tmx_path: Path) -> ET.Element:
+    try:
+        return ET.fromstring(tmx_path.read_text(encoding="utf-8"))
+    except ET.ParseError as exc:
+        raise ValueError(f"malformed TMX XML: {exc}") from exc
+
+
 def tmx_lang(element: ET.Element) -> str:
     return element.attrib.get("{http://www.w3.org/XML/1998/namespace}lang", element.attrib.get("lang", "und"))
 
@@ -61,24 +68,27 @@ def unit_segments(unit: ET.Element) -> list[str]:
 
 
 def parse_tmx_units(tmx_path: Path) -> list[tuple[str, str]]:
-    root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
+    root = read_tmx_root(tmx_path)
     return [(segments[0], segments[1]) for tu in descendant_elements(root, "tu") if len(segments := unit_segments(tu)) >= 2]
 
 
 def parse_tmx_units_with_props(tmx_path: Path) -> list[tuple[str, str, dict[str, str]]]:
-    root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
+    root = read_tmx_root(tmx_path)
     return [(segments[0], segments[1], parse_tmx_props(tu)) for tu in descendant_elements(root, "tu") if len(segments := unit_segments(tu)) >= 2]
 
 
 def validate_tmx(tmx_path: Path) -> list[str]:
-    root = ET.fromstring(tmx_path.read_text(encoding="utf-8"))
+    try:
+        root = read_tmx_root(tmx_path)
+    except ValueError as exc:
+        return [str(exc)]
     issues: list[str] = []
-    if root.tag != "tmx":
+    if xml_name(root.tag) != "tmx":
         issues.append("root-not-tmx")
-    if root.find("body") is None:
+    if not descendant_elements(root, "body"):
         issues.append("missing-body")
-    for tu in root.findall(".//tu"):
-        if not tu.findall(".//seg"):
+    for tu in descendant_elements(root, "tu"):
+        if not descendant_elements(tu, "seg"):
             issues.append("missing-seg")
     return issues
 
