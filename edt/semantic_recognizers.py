@@ -8,6 +8,10 @@ PREFIX_KIND = {
     "example": "example",
     "exercise": "exercise",
     "algorithm": "algorithm",
+    "chapter": "chapter",
+    "section": "section",
+    "bibliography": "bibliography",
+    "index": "index",
 }
 
 
