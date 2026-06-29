@@ -14,6 +14,12 @@ def init_memory(path: Path) -> None:
             db.execute("alter table terms add column reviewer text default ''")
         if "status" not in columns:
             db.execute("alter table terms add column status text default ''")
+        if "confidence" not in columns:
+            db.execute("alter table terms add column confidence real default 0")
+        if "origin" not in columns:
+            db.execute("alter table terms add column origin text default ''")
+        if "reviewed_at" not in columns:
+            db.execute("alter table terms add column reviewed_at text default ''")
 
 
 def add_term(path: Path, source: str, target: str, note: str = "") -> None:
