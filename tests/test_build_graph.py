@@ -13,3 +13,10 @@ def test_build_graph_records_edge():
     build_graph.add_edge("node-a", "node-b")
     result = build_graph.upstream_of("node-a")
     assert "node-b" in result
+
+
+def test_build_graph_downstream_lookup():
+    build_graph = BuildGraph()
+    build_graph.add_edge("node-a", "node-b")
+    result = build_graph.downstream_of("node-b")
+    assert "node-a" in result
