@@ -133,3 +133,9 @@ def test_parse_tmx_namespaced_units(tmp_path):
 def test_segment_text_reads_namespaced_seg():
     tuv = ET.fromstring('<tuv xmlns="urn:test"><seg>A</seg></tuv>')
     assert segment_text(tuv) == "A"
+
+
+def test_validate_malformed_tmx(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text("<tmx><body>", encoding="utf-8")
+    assert validate_tmx(source)[0].startswith("malformed TMX XML:")
