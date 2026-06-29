@@ -8,7 +8,7 @@ def test_recognize_definition_prefix():
 
 
 def test_recognize_heading_kind():
-    block = LayoutBlock(block_id="h1", kind="heading", text="Chapter 1")
+    block = LayoutBlock(block_id="h1", kind="heading", text="Introduction")
     assert recognize_semantic_kind(block) == "heading"
 
 
