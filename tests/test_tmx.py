@@ -60,3 +60,9 @@ def test_validate_tmx_ok(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text("<tmx><body /></tmx>", encoding="utf-8")
     assert validate_tmx(source) == []
+
+
+def test_validate_tmx_body(tmp_path):
+    source = tmp_path / "source.tmx"
+    source.write_text("<tmx />", encoding="utf-8")
+    assert validate_tmx(source) == ["missing-body"]
