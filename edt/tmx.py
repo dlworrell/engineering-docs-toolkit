@@ -24,6 +24,10 @@ def tmx_prop(name: str, value: str) -> str:
     return f'<prop type="{escape(name)}">{escape(value)}</prop>'
 
 
+def parse_tmx_props(unit: ET.Element) -> dict[str, str]:
+    return {prop.attrib.get("type", ""): prop.text or "" for prop in unit.findall("prop")}
+
+
 def export_tmx(db_path: Path, out_path: Path) -> None:
     init_memory(db_path)
     with sqlite3.connect(db_path) as db:
