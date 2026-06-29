@@ -16,6 +16,8 @@ def node_to_dict(node: EdomNode) -> dict:
 
 def dict_to_node(data: dict) -> EdomNode:
     node = EdomNode(kind=str(data["kind"]), text=str(data.get("text", "")), node_id=str(data["id"]))
+    for child in data.get("children", []):
+        node.add(dict_to_node(child))
     return node
 
 
