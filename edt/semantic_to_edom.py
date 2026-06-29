@@ -20,7 +20,7 @@ SEMANTIC_TO_EDOM = {
 
 
 def semantic_block_to_edom(block: SemanticBlock) -> EdomNode:
-    return EdomNode(kind=SEMANTIC_TO_EDOM.get(block.semantic_kind, "block"), text=block.text, node_id=block.block_id)
+    return EdomNode(kind=SEMANTIC_TO_EDOM.get(block.semantic_kind, "block"), text=block.text, node_id=block.block_id, metadata=dict(block.metadata))
 
 
 def semantic_page_to_edom(page: SemanticPage) -> EdomNode:
