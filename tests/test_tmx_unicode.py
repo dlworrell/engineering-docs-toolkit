@@ -22,3 +22,9 @@ def test_tmx_round_trips_emoji(tmp_path):
 def test_tmx_round_trips_supplementary_plane(tmp_path):
     text = "supplementary " + chr(0x1D11E)
     assert round_trip(tmp_path, text) == text
+
+
+def test_tmx_round_trips_unicode_mark_sequence(tmp_path):
+    mark = "\\u0301".encode("ascii").decode("unicode_escape")
+    text = "unicode e" + mark
+    assert round_trip(tmp_path, text) == text
