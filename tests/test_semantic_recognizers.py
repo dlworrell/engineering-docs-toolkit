@@ -10,3 +10,13 @@ def test_recognize_definition_prefix():
 def test_recognize_heading_kind():
     block = LayoutBlock(block_id="h1", kind="heading", text="Chapter 1")
     assert recognize_semantic_kind(block) == "heading"
+
+
+def test_recognize_chapter_prefix():
+    block = LayoutBlock(block_id="c1", kind="paragraph", text="Chapter 1 Introduction")
+    assert recognize_semantic_kind(block) == "chapter"
+
+
+def test_recognize_bibliography_prefix():
+    block = LayoutBlock(block_id="biblio", kind="paragraph", text="Bibliography")
+    assert recognize_semantic_kind(block) == "bibliography"
