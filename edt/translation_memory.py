@@ -28,6 +28,12 @@ def add_term_pair(path: Path, source: str, target: str, source_lang: str, target
         db.execute("insert into terms (source, target, source_lang, target_lang) values (?, ?, ?, ?)", (source, target, source_lang, target_lang))
 
 
+def add_reviewed_term(path: Path, source: str, target: str, reviewer: str, status: str) -> None:
+    init_memory(path)
+    with sqlite3.connect(path) as db:
+        db.execute("insert into terms (source, target, reviewer, status) values (?, ?, ?, ?)", (source, target, reviewer, status))
+
+
 def lookup_term(path: Path, source: str) -> str | None:
     init_memory(path)
     with sqlite3.connect(path) as db:
