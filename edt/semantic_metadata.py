@@ -1,6 +1,7 @@
 from .equation_numbers import equation_number
 from .layout_model import LayoutBlock
 from .proof_markers import proof_end_marker
+from .reference_numbers import reference_number_from_text
 from .semantic_blocks import SemanticBlock, semantic_block_from_layout
 
 
@@ -10,6 +11,8 @@ def semantic_metadata_for_layout(block: LayoutBlock, semantic_kind: str) -> dict
         metadata["equation_number"] = number
     if semantic_kind == "proof" and (marker := proof_end_marker(block)):
         metadata["proof_end_marker"] = marker
+    if semantic_kind in {"figure", "table", "theorem"} and (number := reference_number_from_text(block.text, semantic_kind)):
+        metadata["number"] = number
     return metadata
 
 
