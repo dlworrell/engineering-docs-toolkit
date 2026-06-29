@@ -20,3 +20,13 @@ def test_recognize_chapter_prefix():
 def test_recognize_bibliography_prefix():
     block = LayoutBlock(block_id="biblio", kind="paragraph", text="Bibliography")
     assert recognize_semantic_kind(block) == "bibliography"
+
+
+def test_recognize_lemma_prefix():
+    block = LayoutBlock(block_id="lem1", kind="paragraph", text="Lemma. Let x be...")
+    assert recognize_semantic_kind(block) == "lemma"
+
+
+def test_recognize_corollary_prefix():
+    block = LayoutBlock(block_id="cor1", kind="paragraph", text="Corollary 2.1")
+    assert recognize_semantic_kind(block) == "corollary"
