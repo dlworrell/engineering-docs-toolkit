@@ -106,3 +106,15 @@ def test_import_tmx_metadata(tmp_path):
     with sqlite3.connect(db) as conn:
         rows = conn.execute("select status from terms").fetchall()
     assert rows == [("approved",)]
+
+
+def test_metadata_round_trip(tmp_path):
+    source_db = tmp_path / "source.sqlite"
+    out = tmp_path / "memory.tmx"
+    target_db = tmp_path / "target.sqlite"
+    add_reviewed_term(source_db, "A", "B", "D", "approved")
+    export_tmx(source_db, out)
+    import_tmx(out, target_db)
+    with sqlite3.connect(target_db) as conn:
+        rows = conn.execute("select reviewer, status from terms").fetchall()
+    assert rows == [("D", "approved")]
