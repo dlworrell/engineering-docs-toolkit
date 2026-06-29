@@ -34,3 +34,7 @@ def heading_jumps(root: EdomNode) -> list[str]:
             issues.append(node.text)
         previous = level
     return issues
+
+
+def reference_targets(root: EdomNode) -> list[str]:
+    return [node.text for node in preorder(root) if node.kind == "reference"]
