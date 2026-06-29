@@ -1,5 +1,5 @@
 from edt.tmx import export_tmx, import_tmx, parse_tmx_units
-from edt.translation_memory import add_term_pair
+from edt.translation_memory import add_term_pair, lookup_term
 
 
 def test_export_tmx(tmp_path):
@@ -22,3 +22,11 @@ def test_parse_tmx_units(tmp_path):
     source = tmp_path / "source.tmx"
     source.write_text("<tmx><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>", encoding="utf-8")
     assert parse_tmx_units(source) == [("A", "B")]
+
+
+def test_import_tmx_stores_units(tmp_path):
+    source = tmp_path / "source.tmx"
+    db = tmp_path / "memory.sqlite"
+    source.write_text("<tmx><body><tu><tuv><seg>A</seg></tuv><tuv><seg>B</seg></tuv></tu></body></tmx>", encoding="utf-8")
+    import_tmx(source, db)
+    assert lookup_term(db, "A") == "B"
