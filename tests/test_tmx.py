@@ -1,6 +1,6 @@
 from xml.etree import ElementTree as ET
 
-from edt.tmx import export_tmx, import_tmx, parse_tmx_units, tmx_date, tmx_header, tmx_lang, validate_tmx
+from edt.tmx import export_tmx, import_tmx, parse_tmx_units, tmx_date, tmx_header, tmx_lang, tmx_prop, validate_tmx
 from edt.translation_memory import add_term_pair, lookup_term
 
 
