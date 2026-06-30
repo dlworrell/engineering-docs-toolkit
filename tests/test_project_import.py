@@ -50,6 +50,7 @@ def test_project_import_hashes_existing_source(tmp_path):
     assert page_manifest["status"] == "initialized"
     assert page_manifest["image_status"] == "skipped_not_pdf"
     assert page_manifest["ocr_status"] == "waiting_for_image"
+    assert page_manifest["layout_status"] == "waiting_for_ocr"
 
 
 def test_project_import_extracts_pdf_page_images(tmp_path, monkeypatch):
@@ -98,6 +99,34 @@ def test_project_import_writes_ocr_artifact(tmp_path, monkeypatch):
     assert ocr_payload["text"] == "Herkules"
     page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
     assert page_manifest["ocr_status"] == "complete"
+
+
+def test_project_import_writes_layout_artifact(tmp_path, monkeypatch):
+    source = tmp_path / "source" / "original" / "herkules-manual.pdf"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"%PDF-1.7\n")
+
+    def fake_extract(pdf_path: Path, output_dir: Path, first_page: int, last_page: int):
+        output_dir.mkdir(parents=True)
+        rendered = output_dir / "page-0001.png"
+        rendered.write_bytes(b"png")
+        return [PdfPageImage(pdf_path=pdf_path, page_number=1, image_path=rendered)]
+
+    class FakeOcrEngine:
+        name = "fake"
+
+        def recognize_image(self, image_path: Path, page_number: int = 1):
+            return OcrPage(page_number=page_number, blocks=[OcrBlock(text="HERKULES", confidence=0.9)])
+
+    monkeypatch.setattr("edt.project_import.extract_pdf_pages", fake_extract)
+    monkeypatch.setattr("edt.project_import.make_ocr_engine", lambda config: FakeOcrEngine())
+    import_project(tmp_path)
+
+    layout_payload = json.loads((tmp_path / "pages" / "0001" / "layout.json").read_text(encoding="utf-8"))
+    assert layout_payload["blocks"][0]["kind"] == "heading"
+    assert layout_payload["blocks"][0]["text"] == "HERKULES"
+    page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
+    assert page_manifest["layout_status"] == "complete"
 
 
 def test_load_project_import_config_uses_manifest_values(tmp_path):
