@@ -7,6 +7,8 @@ from typing import Any
 
 
 SEVERITIES = ("info", "warning", "error")
+UNREFERENCED_OK = {"document", "page", "chapter", "section", "frontmatter", "title", "subtitle", "copyright", "toc", "appendix", "bibliography", "index", "glossary", "caption", "proof"}
+REFERENCE_EXPECTED = {"figure", "table", "equation", "theorem", "definition", "lemma", "corollary"}
 
 
 @dataclass(frozen=True)
@@ -44,29 +46,15 @@ class ValidationReport:
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "summary": {
-                "findings": len(self.findings),
-                "errors": self.error_count,
-                "warnings": self.warning_count,
-                "info": self.info_count,
-            },
+            "summary": {"findings": len(self.findings), "errors": self.error_count, "warnings": self.warning_count, "info": self.info_count},
             "findings": [asdict(finding) for finding in self.findings],
         }
 
     def to_markdown(self) -> str:
-        lines = [
-            "# EDT Validation Report",
-            "",
-            f"Findings: {len(self.findings)}",
-            f"Errors: {self.error_count}",
-            f"Warnings: {self.warning_count}",
-            f"Info: {self.info_count}",
-            "",
-        ]
+        lines = ["# EDT Validation Report", "", f"Findings: {len(self.findings)}", f"Errors: {self.error_count}", f"Warnings: {self.warning_count}", f"Info: {self.info_count}", ""]
         if not self.findings:
             lines.append("No validation findings.")
             return "\n".join(lines) + "\n"
-
         lines.append("| Severity | Rule | Category | Page | Node | Message |")
         lines.append("|---|---|---|---:|---|---|")
         for finding in self.findings:
@@ -110,8 +98,7 @@ def _node_number(node: dict[str, Any]) -> str:
     metadata = node.get("metadata", {})
     if not isinstance(metadata, dict):
         return ""
-    value = metadata.get("number", metadata.get("equation_number", ""))
-    return str(value).strip()
+    return str(metadata.get("number", metadata.get("equation_number", ""))).strip()
 
 
 def _node_references(node: dict[str, Any]) -> list[str]:
@@ -124,6 +111,16 @@ def _node_references(node: dict[str, Any]) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value if str(item)]
     return []
+
+
+def _is_unreferenced_ok(node: dict[str, Any]) -> bool:
+    kind = str(node.get("kind", ""))
+    metadata = node.get("metadata", {})
+    if kind in UNREFERENCED_OK:
+        return True
+    if isinstance(metadata, dict) and metadata.get("unreferenced_ok") is True:
+        return True
+    return False
 
 
 def _validate_duplicate_ids(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
@@ -139,10 +136,9 @@ def _validate_duplicate_ids(report: ValidationReport, nodes: list[tuple[dict[str
 
 
 def _validate_empty_nodes(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
-    structural_kinds = {"document", "page"}
     for node, page in nodes:
         kind = str(node.get("kind", ""))
-        if kind in structural_kinds:
+        if kind in {"document", "page"}:
             continue
         text = str(node.get("text", ""))
         children = node.get("children", [])
@@ -166,10 +162,7 @@ def _validate_page_sequence(report: ValidationReport, root: dict[str, Any]) -> N
             page_numbers.append(int(node_id.removeprefix("page-")))
         except ValueError:
             report.add(ValidationFinding("EDOM012", "warning", "structure", "Page node id does not contain a valid page number.", node_id=node_id))
-    if not page_numbers:
-        return
-    missing = sorted(set(range(min(page_numbers), max(page_numbers) + 1)) - set(page_numbers))
-    for page in missing:
+    for page in sorted(set(range(min(page_numbers), max(page_numbers) + 1)) - set(page_numbers)) if page_numbers else []:
         report.add(ValidationFinding("EDOM013", "error", "structure", f"Missing page {page} in document page sequence.", page=page))
 
 
@@ -178,23 +171,14 @@ def _validate_theorem_proof_pairs(report: ValidationReport, nodes: list[tuple[di
     for index, (node, page) in enumerate(linear):
         kind = str(node.get("kind", ""))
         node_id = str(node.get("id", ""))
-        if kind == "theorem":
-            next_kind = str(linear[index + 1][0].get("kind", "")) if index + 1 < len(linear) else ""
-            if next_kind != "proof":
-                report.add(ValidationFinding("SEM001", "warning", "semantic", "Theorem is not immediately followed by a proof.", node_id=node_id, page=page))
-        if kind == "proof":
-            previous_kind = str(linear[index - 1][0].get("kind", "")) if index > 0 else ""
-            if previous_kind != "theorem":
-                report.add(ValidationFinding("SEM002", "warning", "semantic", "Proof is not immediately preceded by a theorem.", node_id=node_id, page=page))
+        if kind == "theorem" and (index + 1 >= len(linear) or str(linear[index + 1][0].get("kind", "")) != "proof"):
+            report.add(ValidationFinding("SEM001", "warning", "semantic", "Theorem is not immediately followed by a proof.", node_id=node_id, page=page))
+        if kind == "proof" and (index == 0 or str(linear[index - 1][0].get("kind", "")) != "theorem"):
+            report.add(ValidationFinding("SEM002", "warning", "semantic", "Proof is not immediately preceded by a theorem.", node_id=node_id, page=page))
 
 
 def _validate_duplicate_numbers(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
-    rules = {
-        "theorem": "SEM010",
-        "figure": "SEM011",
-        "table": "SEM012",
-        "definition": "SEM013",
-    }
+    rules = {"theorem": "SEM010", "figure": "SEM011", "table": "SEM012", "definition": "SEM013"}
     seen: dict[tuple[str, str], tuple[str, int | None]] = {}
     for node, page in nodes:
         kind = str(node.get("kind", ""))
@@ -213,9 +197,7 @@ def _validate_duplicate_numbers(report: ValidationReport, nodes: list[tuple[dict
 
 def _has_caption_child(node: dict[str, Any]) -> bool:
     children = node.get("children", [])
-    if not isinstance(children, list):
-        return False
-    return any(isinstance(child, dict) and child.get("kind") == "caption" for child in children)
+    return isinstance(children, list) and any(isinstance(child, dict) and child.get("kind") == "caption" for child in children)
 
 
 def _validate_captions(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
@@ -227,18 +209,18 @@ def _validate_captions(report: ValidationReport, nodes: list[tuple[dict[str, Any
             report.add(ValidationFinding("SEM020", "warning", "semantic", "Figure is missing a caption.", node_id=node_id, page=page))
         if kind == "table" and not _has_caption_child(node):
             report.add(ValidationFinding("SEM021", "warning", "semantic", "Table is missing a caption.", node_id=node_id, page=page))
-
         children = node.get("children", [])
-        if not isinstance(children, list):
-            continue
-        for child in children:
-            if isinstance(child, dict) and child.get("kind") == "caption" and kind not in valid_caption_owners:
-                report.add(ValidationFinding("SEM022", "warning", "semantic", "Caption is attached to a node that cannot own captions.", node_id=str(child.get("id", "")), page=page))
+        if isinstance(children, list):
+            for child in children:
+                if isinstance(child, dict) and child.get("kind") == "caption" and kind not in valid_caption_owners:
+                    report.add(ValidationFinding("SEM022", "warning", "semantic", "Caption is attached to a node that cannot own captions.", node_id=str(child.get("id", "")), page=page))
 
 
 def _validate_references(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
-    node_ids = {str(node.get("id", "")) for node, _page in nodes if str(node.get("id", ""))}
+    node_by_id = {str(node.get("id", "")): (node, page) for node, page in nodes if str(node.get("id", ""))}
+    node_ids = set(node_by_id)
     adjacency: dict[str, list[str]] = {}
+    incoming: dict[str, int] = {node_id: 0 for node_id in node_ids}
     for node, page in nodes:
         node_id = str(node.get("id", ""))
         if not node_id:
@@ -248,8 +230,16 @@ def _validate_references(report: ValidationReport, nodes: list[tuple[dict[str, A
         for target_id in references:
             if target_id not in node_ids:
                 report.add(ValidationFinding("REF001", "warning", "reference", f"Reference target does not exist: {target_id}", node_id=node_id, page=page))
+            else:
+                incoming[target_id] += 1
             if target_id == node_id:
                 report.add(ValidationFinding("REF003", "warning", "reference", "Node references itself.", node_id=node_id, page=page))
+
+    for node_id, count in incoming.items():
+        node, page = node_by_id[node_id]
+        kind = str(node.get("kind", ""))
+        if count == 0 and kind in REFERENCE_EXPECTED and not _is_unreferenced_ok(node):
+            report.add(ValidationFinding("REF002", "warning", "reference", f"{kind.title()} is never referenced.", node_id=node_id, page=page))
 
     visited: set[str] = set()
     visiting: set[str] = set()
@@ -284,7 +274,6 @@ def validate_document_edom(document_payload: dict[str, object]) -> ValidationRep
     children = root.get("children", [])
     if not isinstance(children, list) or not children:
         report.add(ValidationFinding("EDOM003", "warning", "structure", "Document has no page children.", node_id=str(root.get("id", ""))))
-
     nodes = _walk_nodes(root)
     _validate_duplicate_ids(report, nodes)
     _validate_empty_nodes(report, nodes)
