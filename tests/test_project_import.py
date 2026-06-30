@@ -1,0 +1,57 @@
+import json
+
+from edt.project_import import import_project, load_project_import_config
+
+
+def test_project_import_reports_missing_source(tmp_path):
+    manifest_dir = tmp_path / "edt"
+    manifest_dir.mkdir()
+    (manifest_dir / "project.yml").write_text(
+        "source:\n"
+        "  primary_pdf: source/original/herkules-manual.pdf\n"
+        "outputs:\n"
+        "  edom: output/pilot/edom\n"
+        "  reports: reports/pilot\n",
+        encoding="utf-8",
+    )
+
+    result = import_project(tmp_path)
+
+    assert result.source_exists is False
+    assert result.fingerprint == "missing"
+    assert result.report_path.exists()
+    report = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert report["status"] == "waiting_for_source_pdf"
+    assert (tmp_path / "source" / "original" / "SHA256SUMS").exists()
+    assert (tmp_path / "source" / "original" / "provenance.md").exists()
+
+
+def test_project_import_hashes_existing_source(tmp_path):
+    source = tmp_path / "source" / "original" / "herkules-manual.pdf"
+    source.parent.mkdir(parents=True)
+    source.write_text("fake pdf content", encoding="utf-8")
+
+    result = import_project(tmp_path)
+
+    assert result.source_exists is True
+    assert result.fingerprint != "missing"
+    assert (tmp_path / "output" / "import" / "edom" / "import-notes.md").exists()
+
+
+def test_load_project_import_config_uses_manifest_values(tmp_path):
+    manifest = tmp_path / "edt" / "project.yml"
+    manifest.parent.mkdir()
+    manifest.write_text(
+        "source:\n"
+        "  primary_pdf: source/original/book.pdf\n"
+        "outputs:\n"
+        "  edom: output/custom/edom\n"
+        "  reports: reports/custom\n",
+        encoding="utf-8",
+    )
+
+    config = load_project_import_config(tmp_path)
+
+    assert config.source_pdf == tmp_path / "source" / "original" / "book.pdf"
+    assert config.output_dir == tmp_path / "output" / "custom" / "edom"
+    assert config.report_dir == tmp_path / "reports" / "custom"
