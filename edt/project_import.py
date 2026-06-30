@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .edom import EdomNode
-from .hash_cache import hash_file
+from .hash_cache import hash_file, hash_text
 from .layout_model import LayoutBlock, LayoutPage
 from .ocr_engine import NullOcrEngine, OcrEngine
 from .ocr_model import OcrBlock, OcrPage
@@ -96,7 +96,6 @@ def write_source_provenance(root: Path, source_pdf: Path, fingerprint: str) -> N
     source_dir.mkdir(parents=True, exist_ok=True)
     checksum_path = source_dir / "SHA256SUMS"
     provenance_path = source_dir / "provenance.md"
-
     checksum_path.write_text(f"{fingerprint}  {source_pdf.name}\n", encoding="utf-8")
     provenance_path.write_text(
         "# Source Provenance\n\n"
@@ -118,6 +117,12 @@ def is_pdf_file(path: Path) -> bool:
         return path.read_bytes()[:5] == b"%PDF-"
     except OSError:
         return False
+
+
+def _update_page_manifest(path: Path, **updates: object) -> None:
+    page_manifest = json.loads(path.read_text(encoding="utf-8"))
+    page_manifest.update(updates)
+    path.write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
 
 
 def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerprint: str, source_exists: bool) -> list[dict[str, object]]:
@@ -159,12 +164,6 @@ def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerpri
             }
         )
     return pages
-
-
-def _update_page_manifest(path: Path, **updates: object) -> None:
-    page_manifest = json.loads(path.read_text(encoding="utf-8"))
-    page_manifest.update(updates)
-    path.write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
 
 
 def extract_page_images(root: Path, config: ProjectImportConfig, source_exists: bool) -> list[dict[str, object]]:
@@ -389,6 +388,42 @@ def generate_edoms(root: Path, config: ProjectImportConfig) -> list[dict[str, ob
     return results
 
 
+def assemble_document_edom(root: Path, config: ProjectImportConfig) -> dict[str, object]:
+    children: list[dict[str, object]] = []
+    sources: list[str] = []
+    for page_number in range(config.first_page, config.last_page + 1):
+        edom_path = page_artifact_dir(config.pages_dir, page_number) / "edom.json"
+        if not edom_path.exists():
+            continue
+        payload = json.loads(edom_path.read_text(encoding="utf-8"))
+        root_node = payload.get("root")
+        if isinstance(root_node, dict):
+            children.append(root_node)
+            sources.append(str(edom_path.relative_to(root)))
+
+    document_text = json.dumps(children, sort_keys=True, ensure_ascii=False)
+    document = {
+        "id": "document",
+        "kind": "document",
+        "text": "",
+        "metadata": {
+            "source_pdf": str(config.source_pdf.relative_to(root)),
+            "page_range": f"{config.first_page}-{config.last_page}",
+        },
+        "fingerprint": hash_text(document_text),
+        "children": children,
+    }
+    output_path = config.output_dir / "document.edom.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "source_pages": sources,
+        "page_count": len(children),
+        "root": document,
+    }
+    output_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return {"status": "complete", "document": str(output_path.relative_to(root)), "pages": len(children)}
+
+
 def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
     root = root or Path.cwd()
     config = load_project_import_config(root, manifest)
@@ -405,6 +440,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
     layout_results = generate_layouts(root, config)
     semantic_results = generate_semantics(root, config)
     edom_results = generate_edoms(root, config)
+    document_edom = assemble_document_edom(root, config)
 
     if source_exists:
         import_pdf(config.source_pdf, config.output_dir)
@@ -422,6 +458,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
         "layout_results": layout_results,
         "semantic_results": semantic_results,
         "edom_results": edom_results,
+        "document_edom": document_edom,
         "edom_output": str(config.output_dir.relative_to(root)),
         "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
