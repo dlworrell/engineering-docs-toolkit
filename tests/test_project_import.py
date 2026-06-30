@@ -1,5 +1,7 @@
 import json
+from pathlib import Path
 
+from edt.pdf_pages import PdfPageImage
 from edt.project_import import import_project, load_project_import_config
 
 
@@ -45,6 +47,27 @@ def test_project_import_hashes_existing_source(tmp_path):
     assert (tmp_path / "output" / "import" / "edom" / "import-notes.md").exists()
     page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
     assert page_manifest["status"] == "initialized"
+    assert page_manifest["image_status"] == "skipped_not_pdf"
+
+
+def test_project_import_extracts_pdf_page_images(tmp_path, monkeypatch):
+    source = tmp_path / "source" / "original" / "herkules-manual.pdf"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"%PDF-1.7\n")
+
+    def fake_extract(pdf_path: Path, output_dir: Path, first_page: int, last_page: int):
+        output_dir.mkdir(parents=True)
+        rendered = output_dir / "page-0001.png"
+        rendered.write_bytes(b"png")
+        return [PdfPageImage(pdf_path=pdf_path, page_number=1, image_path=rendered)]
+
+    monkeypatch.setattr("edt.project_import.extract_pdf_pages", fake_extract)
+    result = import_project(tmp_path)
+
+    assert result.source_exists is True
+    assert (tmp_path / "pages" / "0001" / "image.png").read_bytes() == b"png"
+    page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
+    assert page_manifest["image_status"] == "extracted"
 
 
 def test_load_project_import_config_uses_manifest_values(tmp_path):
