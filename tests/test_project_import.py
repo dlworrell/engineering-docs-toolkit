@@ -52,6 +52,7 @@ def test_project_import_hashes_existing_source(tmp_path):
     assert page_manifest["ocr_status"] == "waiting_for_image"
     assert page_manifest["layout_status"] == "waiting_for_ocr"
     assert page_manifest["semantic_status"] == "waiting_for_layout"
+    assert page_manifest["edom_status"] == "waiting_for_semantic"
 
 
 def test_project_import_extracts_pdf_page_images(tmp_path, monkeypatch):
@@ -157,6 +158,35 @@ def test_project_import_writes_semantic_artifact(tmp_path, monkeypatch):
     assert semantic_payload["relationships"][0]["relationship"] == "has_proof"
     page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
     assert page_manifest["semantic_status"] == "complete"
+
+
+def test_project_import_writes_edom_artifact(tmp_path, monkeypatch):
+    source = tmp_path / "source" / "original" / "herkules-manual.pdf"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"%PDF-1.7\n")
+
+    def fake_extract(pdf_path: Path, output_dir: Path, first_page: int, last_page: int):
+        output_dir.mkdir(parents=True)
+        rendered = output_dir / "page-0001.png"
+        rendered.write_bytes(b"png")
+        return [PdfPageImage(pdf_path=pdf_path, page_number=1, image_path=rendered)]
+
+    class FakeOcrEngine:
+        name = "fake"
+
+        def recognize_image(self, image_path: Path, page_number: int = 1):
+            return OcrPage(page_number=page_number, blocks=[OcrBlock(text="Theorem 1.1", confidence=0.9), OcrBlock(text="Proof.", confidence=0.9)])
+
+    monkeypatch.setattr("edt.project_import.extract_pdf_pages", fake_extract)
+    monkeypatch.setattr("edt.project_import.make_ocr_engine", lambda config: FakeOcrEngine())
+    import_project(tmp_path)
+
+    edom_payload = json.loads((tmp_path / "pages" / "0001" / "edom.json").read_text(encoding="utf-8"))
+    assert edom_payload["root"]["kind"] == "page"
+    assert edom_payload["root"]["children"][0]["kind"] == "theorem"
+    assert edom_payload["root"]["children"][1]["kind"] == "proof"
+    page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
+    assert page_manifest["edom_status"] == "complete"
 
 
 def test_load_project_import_config_uses_manifest_values(tmp_path):
