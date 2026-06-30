@@ -114,6 +114,18 @@ def _node_number(node: dict[str, Any]) -> str:
     return str(value).strip()
 
 
+def _node_references(node: dict[str, Any]) -> list[str]:
+    metadata = node.get("metadata", {})
+    if not isinstance(metadata, dict):
+        return []
+    value = metadata.get("references", metadata.get("reference", metadata.get("target_id", "")))
+    if isinstance(value, str):
+        return [value] if value else []
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item)]
+    return []
+
+
 def _validate_duplicate_ids(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
     seen: dict[str, int | None] = {}
     for node, page in nodes:
@@ -224,6 +236,43 @@ def _validate_captions(report: ValidationReport, nodes: list[tuple[dict[str, Any
                 report.add(ValidationFinding("SEM022", "warning", "semantic", "Caption is attached to a node that cannot own captions.", node_id=str(child.get("id", "")), page=page))
 
 
+def _validate_references(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
+    node_ids = {str(node.get("id", "")) for node, _page in nodes if str(node.get("id", ""))}
+    adjacency: dict[str, list[str]] = {}
+    for node, page in nodes:
+        node_id = str(node.get("id", ""))
+        if not node_id:
+            continue
+        references = _node_references(node)
+        adjacency[node_id] = references
+        for target_id in references:
+            if target_id not in node_ids:
+                report.add(ValidationFinding("REF001", "warning", "reference", f"Reference target does not exist: {target_id}", node_id=node_id, page=page))
+            if target_id == node_id:
+                report.add(ValidationFinding("REF003", "warning", "reference", "Node references itself.", node_id=node_id, page=page))
+
+    visited: set[str] = set()
+    visiting: set[str] = set()
+
+    def visit(node_id: str) -> bool:
+        if node_id in visiting:
+            return True
+        if node_id in visited:
+            return False
+        visiting.add(node_id)
+        for target_id in adjacency.get(node_id, []):
+            if target_id in node_ids and visit(target_id):
+                return True
+        visiting.remove(node_id)
+        visited.add(node_id)
+        return False
+
+    for node_id in adjacency:
+        if visit(node_id):
+            report.add(ValidationFinding("REF003", "warning", "reference", "Circular reference detected.", node_id=node_id))
+            break
+
+
 def validate_document_edom(document_payload: dict[str, object]) -> ValidationReport:
     report = ValidationReport()
     root = document_payload.get("root")
@@ -243,4 +292,5 @@ def validate_document_edom(document_payload: dict[str, object]) -> ValidationRep
     _validate_theorem_proof_pairs(report, nodes)
     _validate_duplicate_numbers(report, nodes)
     _validate_captions(report, nodes)
+    _validate_references(report, nodes)
     return report
