@@ -111,7 +111,7 @@ def test_validate_document_edom_reports_theorem_without_proof():
     )
 
     assert any(finding.rule == "SEM001" and finding.node_id == "thm1" for finding in report.findings)
-    assert report.warning_count == 1
+    assert any(finding.rule == "REF002" and finding.node_id == "thm1" for finding in report.findings)
 
 
 def test_validate_document_edom_reports_proof_without_theorem():
