@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from edt.ocr_model import OcrBlock, OcrPage
 from edt.pdf_pages import PdfPageImage
 from edt.project_import import import_project, load_project_import_config
 
@@ -48,6 +49,7 @@ def test_project_import_hashes_existing_source(tmp_path):
     page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
     assert page_manifest["status"] == "initialized"
     assert page_manifest["image_status"] == "skipped_not_pdf"
+    assert page_manifest["ocr_status"] == "waiting_for_image"
 
 
 def test_project_import_extracts_pdf_page_images(tmp_path, monkeypatch):
@@ -70,6 +72,34 @@ def test_project_import_extracts_pdf_page_images(tmp_path, monkeypatch):
     assert page_manifest["image_status"] == "extracted"
 
 
+def test_project_import_writes_ocr_artifact(tmp_path, monkeypatch):
+    source = tmp_path / "source" / "original" / "herkules-manual.pdf"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"%PDF-1.7\n")
+
+    def fake_extract(pdf_path: Path, output_dir: Path, first_page: int, last_page: int):
+        output_dir.mkdir(parents=True)
+        rendered = output_dir / "page-0001.png"
+        rendered.write_bytes(b"png")
+        return [PdfPageImage(pdf_path=pdf_path, page_number=1, image_path=rendered)]
+
+    class FakeOcrEngine:
+        name = "fake"
+
+        def recognize_image(self, image_path: Path, page_number: int = 1):
+            return OcrPage(page_number=page_number, blocks=[OcrBlock(text="Herkules", confidence=0.9)])
+
+    monkeypatch.setattr("edt.project_import.extract_pdf_pages", fake_extract)
+    monkeypatch.setattr("edt.project_import.make_ocr_engine", lambda config: FakeOcrEngine())
+    import_project(tmp_path)
+
+    ocr_payload = json.loads((tmp_path / "pages" / "0001" / "ocr.json").read_text(encoding="utf-8"))
+    assert ocr_payload["engine"] == "fake"
+    assert ocr_payload["text"] == "Herkules"
+    page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
+    assert page_manifest["ocr_status"] == "complete"
+
+
 def test_load_project_import_config_uses_manifest_values(tmp_path):
     manifest = tmp_path / "edt" / "project.yml"
     manifest.parent.mkdir()
@@ -78,6 +108,9 @@ def test_load_project_import_config_uses_manifest_values(tmp_path):
         "  primary_pdf: source/original/book.pdf\n"
         "  start: 4\n"
         "  end: 6\n"
+        "ocr:\n"
+        "  engine: tesseract\n"
+        "  language: swe\n"
         "outputs:\n"
         "  edom: output/custom/edom\n"
         "  reports: reports/custom\n"
@@ -93,3 +126,5 @@ def test_load_project_import_config_uses_manifest_values(tmp_path):
     assert config.pages_dir == tmp_path / "import-pages"
     assert config.first_page == 4
     assert config.last_page == 6
+    assert config.ocr_engine == "tesseract"
+    assert config.ocr_language == "swe"
