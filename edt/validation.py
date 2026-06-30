@@ -153,6 +153,21 @@ def _validate_page_sequence(report: ValidationReport, root: dict[str, Any]) -> N
         report.add(ValidationFinding("EDOM013", "error", "structure", f"Missing page {page} in document page sequence.", page=page))
 
 
+def _validate_theorem_proof_pairs(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
+    linear = [(node, page) for node, page in nodes if str(node.get("kind", "")) not in {"document", "page"}]
+    for index, (node, page) in enumerate(linear):
+        kind = str(node.get("kind", ""))
+        node_id = str(node.get("id", ""))
+        if kind == "theorem":
+            next_kind = str(linear[index + 1][0].get("kind", "")) if index + 1 < len(linear) else ""
+            if next_kind != "proof":
+                report.add(ValidationFinding("SEM001", "warning", "semantic", "Theorem is not immediately followed by a proof.", node_id=node_id, page=page))
+        if kind == "proof":
+            previous_kind = str(linear[index - 1][0].get("kind", "")) if index > 0 else ""
+            if previous_kind != "theorem":
+                report.add(ValidationFinding("SEM002", "warning", "semantic", "Proof is not immediately preceded by a theorem.", node_id=node_id, page=page))
+
+
 def validate_document_edom(document_payload: dict[str, object]) -> ValidationReport:
     report = ValidationReport()
     root = document_payload.get("root")
@@ -169,4 +184,5 @@ def validate_document_edom(document_payload: dict[str, object]) -> ValidationRep
     _validate_duplicate_ids(report, nodes)
     _validate_empty_nodes(report, nodes)
     _validate_page_sequence(report, root)
+    _validate_theorem_proof_pairs(report, nodes)
     return report
