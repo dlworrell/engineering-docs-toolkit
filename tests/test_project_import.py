@@ -9,9 +9,12 @@ def test_project_import_reports_missing_source(tmp_path):
     (manifest_dir / "project.yml").write_text(
         "source:\n"
         "  primary_pdf: source/original/herkules-manual.pdf\n"
+        "  start: 1\n"
+        "  end: 3\n"
         "outputs:\n"
         "  edom: output/pilot/edom\n"
-        "  reports: reports/pilot\n",
+        "  reports: reports/pilot\n"
+        "  pages: pages\n",
         encoding="utf-8",
     )
 
@@ -22,8 +25,12 @@ def test_project_import_reports_missing_source(tmp_path):
     assert result.report_path.exists()
     report = json.loads(result.report_path.read_text(encoding="utf-8"))
     assert report["status"] == "waiting_for_source_pdf"
+    assert report["page_range"] == {"start": 1, "end": 3}
+    assert len(report["pages"]) == 3
     assert (tmp_path / "source" / "original" / "SHA256SUMS").exists()
     assert (tmp_path / "source" / "original" / "provenance.md").exists()
+    assert (tmp_path / "pages" / "0001" / "manifest.json").exists()
+    assert (tmp_path / "pages" / "0003" / "manifest.json").exists()
 
 
 def test_project_import_hashes_existing_source(tmp_path):
@@ -36,6 +43,8 @@ def test_project_import_hashes_existing_source(tmp_path):
     assert result.source_exists is True
     assert result.fingerprint != "missing"
     assert (tmp_path / "output" / "import" / "edom" / "import-notes.md").exists()
+    page_manifest = json.loads((tmp_path / "pages" / "0001" / "manifest.json").read_text(encoding="utf-8"))
+    assert page_manifest["status"] == "initialized"
 
 
 def test_load_project_import_config_uses_manifest_values(tmp_path):
@@ -44,9 +53,12 @@ def test_load_project_import_config_uses_manifest_values(tmp_path):
     manifest.write_text(
         "source:\n"
         "  primary_pdf: source/original/book.pdf\n"
+        "  start: 4\n"
+        "  end: 6\n"
         "outputs:\n"
         "  edom: output/custom/edom\n"
-        "  reports: reports/custom\n",
+        "  reports: reports/custom\n"
+        "  pages: import-pages\n",
         encoding="utf-8",
     )
 
@@ -55,3 +67,6 @@ def test_load_project_import_config_uses_manifest_values(tmp_path):
     assert config.source_pdf == tmp_path / "source" / "original" / "book.pdf"
     assert config.output_dir == tmp_path / "output" / "custom" / "edom"
     assert config.report_dir == tmp_path / "reports" / "custom"
+    assert config.pages_dir == tmp_path / "import-pages"
+    assert config.first_page == 4
+    assert config.last_page == 6
