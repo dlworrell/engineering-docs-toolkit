@@ -106,6 +106,14 @@ def _walk_nodes(node: dict[str, Any], page: int | None = None) -> list[tuple[dic
     return nodes
 
 
+def _node_number(node: dict[str, Any]) -> str:
+    metadata = node.get("metadata", {})
+    if not isinstance(metadata, dict):
+        return ""
+    value = metadata.get("number", metadata.get("equation_number", ""))
+    return str(value).strip()
+
+
 def _validate_duplicate_ids(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
     seen: dict[str, int | None] = {}
     for node, page in nodes:
@@ -168,6 +176,29 @@ def _validate_theorem_proof_pairs(report: ValidationReport, nodes: list[tuple[di
                 report.add(ValidationFinding("SEM002", "warning", "semantic", "Proof is not immediately preceded by a theorem.", node_id=node_id, page=page))
 
 
+def _validate_duplicate_numbers(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
+    rules = {
+        "theorem": "SEM010",
+        "figure": "SEM011",
+        "table": "SEM012",
+        "definition": "SEM013",
+    }
+    seen: dict[tuple[str, str], tuple[str, int | None]] = {}
+    for node, page in nodes:
+        kind = str(node.get("kind", ""))
+        if kind not in rules:
+            continue
+        number = _node_number(node)
+        if not number:
+            continue
+        key = (kind, number)
+        node_id = str(node.get("id", ""))
+        if key in seen:
+            report.add(ValidationFinding(rules[kind], "warning", "semantic", f"Duplicate {kind} number: {number}", node_id=node_id, page=page))
+        else:
+            seen[key] = (node_id, page)
+
+
 def validate_document_edom(document_payload: dict[str, object]) -> ValidationReport:
     report = ValidationReport()
     root = document_payload.get("root")
@@ -185,4 +216,5 @@ def validate_document_edom(document_payload: dict[str, object]) -> ValidationRep
     _validate_empty_nodes(report, nodes)
     _validate_page_sequence(report, root)
     _validate_theorem_proof_pairs(report, nodes)
+    _validate_duplicate_numbers(report, nodes)
     return report
