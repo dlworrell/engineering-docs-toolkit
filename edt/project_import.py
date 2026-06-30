@@ -6,6 +6,7 @@ import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from .edom import EdomNode
 from .hash_cache import hash_file
 from .layout_model import LayoutBlock, LayoutPage
 from .ocr_engine import NullOcrEngine, OcrEngine
@@ -14,8 +15,10 @@ from .ocr_to_layout import ocr_page_to_layout
 from .pdf_import import import_pdf
 from .pdf_pages import extract_pdf_pages
 from .reference_resolver import resolve_reference_relationships
-from .semantic_document import semantic_page_from_layout
-from .semantic_relationships import infer_semantic_relationships
+from .semantic_blocks import SemanticBlock
+from .semantic_document import SemanticPage, semantic_page_from_layout
+from .semantic_relationships import SemanticRelationship, infer_semantic_relationships
+from .semantic_to_edom import semantic_page_to_edom
 from .tesseract_ocr import TesseractOcrEngine
 
 
@@ -140,9 +143,21 @@ def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerpri
             "ocr_status": "waiting_for_image",
             "layout_status": "waiting_for_ocr",
             "semantic_status": "waiting_for_layout",
+            "edom_status": "waiting_for_semantic",
         }
         (artifact_dir / "manifest.json").write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
-        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"], "image_status": page_manifest["image_status"], "ocr_status": page_manifest["ocr_status"], "layout_status": page_manifest["layout_status"], "semantic_status": page_manifest["semantic_status"]})
+        pages.append(
+            {
+                "page": page_number,
+                "directory": str(artifact_dir.relative_to(root)),
+                "status": page_manifest["status"],
+                "image_status": page_manifest["image_status"],
+                "ocr_status": page_manifest["ocr_status"],
+                "layout_status": page_manifest["layout_status"],
+                "semantic_status": page_manifest["semantic_status"],
+                "edom_status": page_manifest["edom_status"],
+            }
+        )
     return pages
 
 
@@ -309,6 +324,71 @@ def generate_semantics(root: Path, config: ProjectImportConfig) -> list[dict[str
     return results
 
 
+def _semantic_page_from_payload(payload: dict[str, object]) -> tuple[SemanticPage, list[SemanticRelationship]]:
+    page = SemanticPage(page_number=int(payload["page"]))
+    for block in payload.get("blocks", []):
+        if not isinstance(block, dict):
+            continue
+        metadata = block.get("metadata", {})
+        page.blocks.append(
+            SemanticBlock(
+                block_id=str(block.get("block_id", "")),
+                semantic_kind=str(block.get("semantic_kind", "paragraph")),
+                text=str(block.get("text", "")),
+                source_kind=str(block.get("source_kind", "")),
+                metadata=dict(metadata) if isinstance(metadata, dict) else {},
+            )
+        )
+    relationships: list[SemanticRelationship] = []
+    for relationship in payload.get("relationships", []):
+        if not isinstance(relationship, dict):
+            continue
+        relationships.append(
+            SemanticRelationship(
+                source_id=str(relationship.get("source_id", "")),
+                target_id=str(relationship.get("target_id", "")),
+                relationship=str(relationship.get("relationship", "")),
+            )
+        )
+    return page, relationships
+
+
+def _edom_node_to_payload(node: EdomNode) -> dict[str, object]:
+    return {
+        "id": node.node_id,
+        "kind": node.kind,
+        "text": node.text,
+        "metadata": node.metadata,
+        "fingerprint": node.fingerprint,
+        "children": [_edom_node_to_payload(child) for child in node.children],
+    }
+
+
+def generate_edoms(root: Path, config: ProjectImportConfig) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    for page_number in range(config.first_page, config.last_page + 1):
+        artifact_dir = page_artifact_dir(config.pages_dir, page_number)
+        semantic_path = artifact_dir / "semantic.json"
+        edom_path = artifact_dir / "edom.json"
+        manifest_path = artifact_dir / "manifest.json"
+        if not semantic_path.exists():
+            _update_page_manifest(manifest_path, edom_status="waiting_for_semantic")
+            results.append({"page": page_number, "status": "waiting_for_semantic"})
+            continue
+        semantic_payload = json.loads(semantic_path.read_text(encoding="utf-8"))
+        semantic_page, _relationships = _semantic_page_from_payload(semantic_payload)
+        edom = semantic_page_to_edom(semantic_page)
+        edom_payload = {
+            "page": semantic_page.page_number,
+            "source_semantic": str(semantic_path.relative_to(root)),
+            "root": _edom_node_to_payload(edom),
+        }
+        edom_path.write_text(json.dumps(edom_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        _update_page_manifest(manifest_path, edom_status="complete")
+        results.append({"page": page_number, "status": "complete", "edom": str(edom_path.relative_to(root)), "children": len(edom.children)})
+    return results
+
+
 def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
     root = root or Path.cwd()
     config = load_project_import_config(root, manifest)
@@ -324,6 +404,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
     ocr_results = run_ocr(root, config, make_ocr_engine(config))
     layout_results = generate_layouts(root, config)
     semantic_results = generate_semantics(root, config)
+    edom_results = generate_edoms(root, config)
 
     if source_exists:
         import_pdf(config.source_pdf, config.output_dir)
@@ -340,6 +421,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
         "ocr_results": ocr_results,
         "layout_results": layout_results,
         "semantic_results": semantic_results,
+        "edom_results": edom_results,
         "edom_output": str(config.output_dir.relative_to(root)),
         "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
