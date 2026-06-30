@@ -199,6 +199,31 @@ def _validate_duplicate_numbers(report: ValidationReport, nodes: list[tuple[dict
             seen[key] = (node_id, page)
 
 
+def _has_caption_child(node: dict[str, Any]) -> bool:
+    children = node.get("children", [])
+    if not isinstance(children, list):
+        return False
+    return any(isinstance(child, dict) and child.get("kind") == "caption" for child in children)
+
+
+def _validate_captions(report: ValidationReport, nodes: list[tuple[dict[str, Any], int | None]]) -> None:
+    valid_caption_owners = {"figure", "table", "listing", "equation"}
+    for node, page in nodes:
+        kind = str(node.get("kind", ""))
+        node_id = str(node.get("id", ""))
+        if kind == "figure" and not _has_caption_child(node):
+            report.add(ValidationFinding("SEM020", "warning", "semantic", "Figure is missing a caption.", node_id=node_id, page=page))
+        if kind == "table" and not _has_caption_child(node):
+            report.add(ValidationFinding("SEM021", "warning", "semantic", "Table is missing a caption.", node_id=node_id, page=page))
+
+        children = node.get("children", [])
+        if not isinstance(children, list):
+            continue
+        for child in children:
+            if isinstance(child, dict) and child.get("kind") == "caption" and kind not in valid_caption_owners:
+                report.add(ValidationFinding("SEM022", "warning", "semantic", "Caption is attached to a node that cannot own captions.", node_id=str(child.get("id", "")), page=page))
+
+
 def validate_document_edom(document_payload: dict[str, object]) -> ValidationReport:
     report = ValidationReport()
     root = document_payload.get("root")
@@ -217,4 +242,5 @@ def validate_document_edom(document_payload: dict[str, object]) -> ValidationRep
     _validate_page_sequence(report, root)
     _validate_theorem_proof_pairs(report, nodes)
     _validate_duplicate_numbers(report, nodes)
+    _validate_captions(report, nodes)
     return report
