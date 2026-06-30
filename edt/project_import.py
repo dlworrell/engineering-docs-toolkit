@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .hash_cache import hash_file
+from .ocr_engine import NullOcrEngine, OcrEngine
 from .pdf_import import import_pdf
 from .pdf_pages import extract_pdf_pages
+from .tesseract_ocr import TesseractOcrEngine
 
 
 @dataclass
@@ -20,6 +22,8 @@ class ProjectImportConfig:
     pages_dir: Path
     first_page: int
     last_page: int
+    ocr_engine: str
+    ocr_language: str
 
 
 @dataclass
@@ -62,6 +66,8 @@ def load_project_import_config(root: Path, manifest: Path | None = None) -> Proj
     pages_value = _read_manifest_value(manifest_path, "pages") or "pages"
     first_page = _read_manifest_int(manifest_path, "start", 1)
     last_page = _read_manifest_int(manifest_path, "end", first_page)
+    ocr_engine = _read_manifest_value(manifest_path, "engine") or "null"
+    ocr_language = _read_manifest_value(manifest_path, "language") or "eng"
 
     return ProjectImportConfig(
         manifest=manifest_path,
@@ -71,6 +77,8 @@ def load_project_import_config(root: Path, manifest: Path | None = None) -> Proj
         pages_dir=root / pages_value,
         first_page=first_page,
         last_page=max(first_page, last_page),
+        ocr_engine=ocr_engine,
+        ocr_language=ocr_language,
     )
 
 
@@ -123,9 +131,10 @@ def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerpri
             },
             "status": "waiting_for_source_pdf" if not source_exists else "initialized",
             "image_status": "waiting_for_source_pdf" if not source_exists else "pending",
+            "ocr_status": "waiting_for_image",
         }
         (artifact_dir / "manifest.json").write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
-        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"], "image_status": page_manifest["image_status"]})
+        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"], "image_status": page_manifest["image_status"], "ocr_status": page_manifest["ocr_status"]})
     return pages
 
 
@@ -171,6 +180,43 @@ def extract_page_images(root: Path, config: ProjectImportConfig, source_exists: 
     return results
 
 
+def make_ocr_engine(config: ProjectImportConfig) -> OcrEngine:
+    if config.ocr_engine == "tesseract":
+        return TesseractOcrEngine(language=config.ocr_language)
+    return NullOcrEngine()
+
+
+def run_ocr(root: Path, config: ProjectImportConfig, engine: OcrEngine) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    for page_number in range(config.first_page, config.last_page + 1):
+        artifact_dir = page_artifact_dir(config.pages_dir, page_number)
+        image_path = artifact_dir / "image.png"
+        ocr_path = artifact_dir / "ocr.json"
+        manifest_path = artifact_dir / "manifest.json"
+        if not image_path.exists():
+            _update_page_manifest(manifest_path, ocr_status="waiting_for_image")
+            results.append({"page": page_number, "status": "waiting_for_image"})
+            continue
+        try:
+            page = engine.recognize_image(image_path, page_number=page_number)
+            ocr_payload = {
+                "page": page.page_number,
+                "engine": getattr(engine, "name", "ocr"),
+                "image": str(image_path.relative_to(root)),
+                "width": page.width,
+                "height": page.height,
+                "text": page.text,
+                "blocks": [asdict(block) for block in page.blocks],
+            }
+            ocr_path.write_text(json.dumps(ocr_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            _update_page_manifest(manifest_path, ocr_status="complete")
+            results.append({"page": page_number, "status": "complete", "ocr": str(ocr_path.relative_to(root))})
+        except (OSError, subprocess.CalledProcessError) as exc:
+            _update_page_manifest(manifest_path, ocr_status="failed", ocr_error=str(exc))
+            results.append({"page": page_number, "status": "failed", "error": str(exc)})
+    return results
+
+
 def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
     root = root or Path.cwd()
     config = load_project_import_config(root, manifest)
@@ -183,6 +229,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
     write_source_provenance(root, config.source_pdf, fingerprint)
     pages = initialize_page_artifacts(root, config, fingerprint, source_exists)
     image_results = extract_page_images(root, config, source_exists)
+    ocr_results = run_ocr(root, config, make_ocr_engine(config))
 
     if source_exists:
         import_pdf(config.source_pdf, config.output_dir)
@@ -196,6 +243,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
         "page_range": {"start": config.first_page, "end": config.last_page},
         "pages": pages,
         "image_results": image_results,
+        "ocr_results": ocr_results,
         "edom_output": str(config.output_dir.relative_to(root)),
         "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
