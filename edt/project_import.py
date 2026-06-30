@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 from .hash_cache import hash_file
 from .pdf_import import import_pdf
+from .pdf_pages import extract_pdf_pages
 
 
 @dataclass
@@ -91,6 +94,15 @@ def page_artifact_dir(pages_dir: Path, page_number: int) -> Path:
     return pages_dir / f"{page_number:04d}"
 
 
+def is_pdf_file(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        return path.read_bytes()[:5] == b"%PDF-"
+    except OSError:
+        return False
+
+
 def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerprint: str, source_exists: bool) -> list[dict[str, object]]:
     config.pages_dir.mkdir(parents=True, exist_ok=True)
     pages: list[dict[str, object]] = []
@@ -110,10 +122,53 @@ def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerpri
                 "edom": str((artifact_dir / "edom.json").relative_to(root)),
             },
             "status": "waiting_for_source_pdf" if not source_exists else "initialized",
+            "image_status": "waiting_for_source_pdf" if not source_exists else "pending",
         }
         (artifact_dir / "manifest.json").write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
-        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"]})
+        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"], "image_status": page_manifest["image_status"]})
     return pages
+
+
+def _update_page_manifest(path: Path, **updates: object) -> None:
+    page_manifest = json.loads(path.read_text(encoding="utf-8"))
+    page_manifest.update(updates)
+    path.write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
+
+
+def extract_page_images(root: Path, config: ProjectImportConfig, source_exists: bool) -> list[dict[str, object]]:
+    if not source_exists:
+        return []
+    if not is_pdf_file(config.source_pdf):
+        results = []
+        for page_number in range(config.first_page, config.last_page + 1):
+            manifest_path = page_artifact_dir(config.pages_dir, page_number) / "manifest.json"
+            _update_page_manifest(manifest_path, image_status="skipped_not_pdf")
+            results.append({"page": page_number, "status": "skipped_not_pdf"})
+        return results
+
+    render_dir = config.pages_dir / "_rendered"
+    results: list[dict[str, object]] = []
+    try:
+        rendered_pages = extract_pdf_pages(config.source_pdf, render_dir, config.first_page, config.last_page)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        for page_number in range(config.first_page, config.last_page + 1):
+            manifest_path = page_artifact_dir(config.pages_dir, page_number) / "manifest.json"
+            _update_page_manifest(manifest_path, image_status="extract_failed", image_error=str(exc))
+            results.append({"page": page_number, "status": "extract_failed", "error": str(exc)})
+        return results
+
+    for rendered_page in rendered_pages:
+        artifact_dir = page_artifact_dir(config.pages_dir, rendered_page.page_number)
+        target_image = artifact_dir / "image.png"
+        if rendered_page.image_path.exists():
+            shutil.copyfile(rendered_page.image_path, target_image)
+            image_status = "extracted"
+        else:
+            image_status = "extract_missing_output"
+        manifest_path = artifact_dir / "manifest.json"
+        _update_page_manifest(manifest_path, image_status=image_status)
+        results.append({"page": rendered_page.page_number, "status": image_status, "image": str(target_image.relative_to(root))})
+    return results
 
 
 def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
@@ -127,6 +182,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
 
     write_source_provenance(root, config.source_pdf, fingerprint)
     pages = initialize_page_artifacts(root, config, fingerprint, source_exists)
+    image_results = extract_page_images(root, config, source_exists)
 
     if source_exists:
         import_pdf(config.source_pdf, config.output_dir)
@@ -139,6 +195,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
         "pages_dir": str(config.pages_dir.relative_to(root)),
         "page_range": {"start": config.first_page, "end": config.last_page},
         "pages": pages,
+        "image_results": image_results,
         "edom_output": str(config.output_dir.relative_to(root)),
         "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
