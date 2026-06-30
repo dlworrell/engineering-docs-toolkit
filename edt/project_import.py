@@ -8,6 +8,8 @@ from pathlib import Path
 
 from .hash_cache import hash_file
 from .ocr_engine import NullOcrEngine, OcrEngine
+from .ocr_model import OcrBlock, OcrPage
+from .ocr_to_layout import ocr_page_to_layout
 from .pdf_import import import_pdf
 from .pdf_pages import extract_pdf_pages
 from .tesseract_ocr import TesseractOcrEngine
@@ -132,9 +134,10 @@ def initialize_page_artifacts(root: Path, config: ProjectImportConfig, fingerpri
             "status": "waiting_for_source_pdf" if not source_exists else "initialized",
             "image_status": "waiting_for_source_pdf" if not source_exists else "pending",
             "ocr_status": "waiting_for_image",
+            "layout_status": "waiting_for_ocr",
         }
         (artifact_dir / "manifest.json").write_text(json.dumps(page_manifest, indent=2) + "\n", encoding="utf-8")
-        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"], "image_status": page_manifest["image_status"], "ocr_status": page_manifest["ocr_status"]})
+        pages.append({"page": page_number, "directory": str(artifact_dir.relative_to(root)), "status": page_manifest["status"], "image_status": page_manifest["image_status"], "ocr_status": page_manifest["ocr_status"], "layout_status": page_manifest["layout_status"]})
     return pages
 
 
@@ -217,6 +220,44 @@ def run_ocr(root: Path, config: ProjectImportConfig, engine: OcrEngine) -> list[
     return results
 
 
+def _ocr_page_from_payload(payload: dict[str, object]) -> OcrPage:
+    page = OcrPage(page_number=int(payload["page"]), width=int(payload.get("width", 0)), height=int(payload.get("height", 0)))
+    for block in payload.get("blocks", []):
+        if not isinstance(block, dict):
+            continue
+        bbox = block.get("bbox")
+        if isinstance(bbox, list):
+            bbox = tuple(bbox)
+        page.blocks.append(OcrBlock(text=str(block.get("text", "")), confidence=float(block.get("confidence", 0.0)), bbox=bbox))
+    return page
+
+
+def generate_layouts(root: Path, config: ProjectImportConfig) -> list[dict[str, object]]:
+    results: list[dict[str, object]] = []
+    for page_number in range(config.first_page, config.last_page + 1):
+        artifact_dir = page_artifact_dir(config.pages_dir, page_number)
+        ocr_path = artifact_dir / "ocr.json"
+        layout_path = artifact_dir / "layout.json"
+        manifest_path = artifact_dir / "manifest.json"
+        if not ocr_path.exists():
+            _update_page_manifest(manifest_path, layout_status="waiting_for_ocr")
+            results.append({"page": page_number, "status": "waiting_for_ocr"})
+            continue
+        payload = json.loads(ocr_path.read_text(encoding="utf-8"))
+        layout = ocr_page_to_layout(_ocr_page_from_payload(payload))
+        layout_payload = {
+            "page": layout.page_number,
+            "width": layout.width,
+            "height": layout.height,
+            "source_ocr": str(ocr_path.relative_to(root)),
+            "blocks": [asdict(block) for block in layout.blocks],
+        }
+        layout_path.write_text(json.dumps(layout_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        _update_page_manifest(manifest_path, layout_status="complete")
+        results.append({"page": page_number, "status": "complete", "layout": str(layout_path.relative_to(root)), "blocks": len(layout.blocks)})
+    return results
+
+
 def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
     root = root or Path.cwd()
     config = load_project_import_config(root, manifest)
@@ -230,6 +271,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
     pages = initialize_page_artifacts(root, config, fingerprint, source_exists)
     image_results = extract_page_images(root, config, source_exists)
     ocr_results = run_ocr(root, config, make_ocr_engine(config))
+    layout_results = generate_layouts(root, config)
 
     if source_exists:
         import_pdf(config.source_pdf, config.output_dir)
@@ -244,6 +286,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
         "pages": pages,
         "image_results": image_results,
         "ocr_results": ocr_results,
+        "layout_results": layout_results,
         "edom_output": str(config.output_dir.relative_to(root)),
         "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
