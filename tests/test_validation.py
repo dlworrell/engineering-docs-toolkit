@@ -302,6 +302,54 @@ def test_validate_document_edom_reports_circular_reference():
     assert any(finding.rule == "REF003" for finding in report.findings)
 
 
+def test_validate_document_edom_reports_orphaned_reference_expected_nodes():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "fig1", "kind": "figure", "text": "", "children": [{"id": "cap1", "kind": "caption", "text": "Figure 1"}]},
+                            {"id": "tbl1", "kind": "table", "text": "T", "children": [{"id": "cap2", "kind": "caption", "text": "Table 1"}]},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    rules = {finding.rule for finding in report.findings}
+    assert "REF002" in rules
+    assert any(finding.node_id == "fig1" for finding in report.findings if finding.rule == "REF002")
+    assert any(finding.node_id == "tbl1" for finding in report.findings if finding.rule == "REF002")
+
+
+def test_validate_document_edom_allows_explicitly_unreferenced_nodes():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "fig1", "kind": "figure", "text": "", "metadata": {"unreferenced_ok": True}, "children": [{"id": "cap1", "kind": "caption", "text": "Figure 1"}]}
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert not any(finding.rule == "REF002" for finding in report.findings)
+
+
 def test_validation_report_writes_files(tmp_path):
     report = ValidationReport([ValidationFinding("EDOM001", "error", "structure", "Bad root")])
 
