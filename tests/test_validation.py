@@ -30,6 +30,37 @@ def test_validate_document_edom_reports_missing_root():
     assert report.findings[0].rule == "EDOM001"
 
 
+def test_validate_document_edom_reports_duplicate_ids():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {"id": "page-1", "kind": "page", "children": [{"id": "a", "kind": "paragraph", "text": "One"}, {"id": "a", "kind": "paragraph", "text": "Two"}]}
+                ],
+            }
+        }
+    )
+
+    assert any(finding.rule == "EDOM010" for finding in report.findings)
+    assert report.error_count == 1
+
+
+def test_validate_document_edom_reports_empty_leaf_nodes():
+    report = validate_document_edom({"root": {"id": "document", "kind": "document", "children": [{"id": "page-1", "kind": "page", "children": [{"id": "empty", "kind": "paragraph", "text": ""}]}]}}})
+
+    assert any(finding.rule == "EDOM011" for finding in report.findings)
+    assert report.warning_count == 1
+
+
+def test_validate_document_edom_reports_missing_pages():
+    report = validate_document_edom({"root": {"id": "document", "kind": "document", "children": [{"id": "page-1", "kind": "page"}, {"id": "page-3", "kind": "page"}]}})
+
+    assert any(finding.rule == "EDOM013" and finding.page == 2 for finding in report.findings)
+    assert report.error_count == 1
+
+
 def test_validation_report_writes_files(tmp_path):
     report = ValidationReport([ValidationFinding("EDOM001", "error", "structure", "Bad root")])
 
