@@ -171,10 +171,10 @@ def test_validate_document_edom_reports_duplicate_figure_table_definition_number
                         "id": "page-1",
                         "kind": "page",
                         "children": [
-                            {"id": "fig1", "kind": "figure", "text": "", "metadata": {"number": "1.2"}},
-                            {"id": "fig2", "kind": "figure", "text": "", "metadata": {"number": "1.2"}},
-                            {"id": "tbl1", "kind": "table", "text": "T", "metadata": {"number": "3.4"}},
-                            {"id": "tbl2", "kind": "table", "text": "T", "metadata": {"number": "3.4"}},
+                            {"id": "fig1", "kind": "figure", "text": "", "metadata": {"number": "1.2"}, "children": [{"id": "cap1", "kind": "caption", "text": "Figure 1.2"}]},
+                            {"id": "fig2", "kind": "figure", "text": "", "metadata": {"number": "1.2"}, "children": [{"id": "cap2", "kind": "caption", "text": "Figure 1.2"}]},
+                            {"id": "tbl1", "kind": "table", "text": "T", "metadata": {"number": "3.4"}, "children": [{"id": "cap3", "kind": "caption", "text": "Table 3.4"}]},
+                            {"id": "tbl2", "kind": "table", "text": "T", "metadata": {"number": "3.4"}, "children": [{"id": "cap4", "kind": "caption", "text": "Table 3.4"}]},
                             {"id": "def1", "kind": "definition", "text": "D", "metadata": {"number": "2.1"}},
                             {"id": "def2", "kind": "definition", "text": "D", "metadata": {"number": "2.1"}},
                         ],
@@ -186,6 +186,52 @@ def test_validate_document_edom_reports_duplicate_figure_table_definition_number
 
     rules = {finding.rule for finding in report.findings}
     assert {"SEM011", "SEM012", "SEM013"}.issubset(rules)
+
+
+def test_validate_document_edom_reports_missing_figure_and_table_captions():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "fig1", "kind": "figure", "text": ""},
+                            {"id": "tbl1", "kind": "table", "text": "T"},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    rules = {finding.rule for finding in report.findings}
+    assert {"SEM020", "SEM021"}.issubset(rules)
+
+
+def test_validate_document_edom_reports_caption_without_valid_owner():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "p1", "kind": "paragraph", "text": "Body", "children": [{"id": "cap1", "kind": "caption", "text": "Figure 1"}]}
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert any(finding.rule == "SEM022" and finding.node_id == "cap1" for finding in report.findings)
 
 
 def test_validation_report_writes_files(tmp_path):
