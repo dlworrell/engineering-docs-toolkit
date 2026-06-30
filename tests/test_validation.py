@@ -135,6 +135,59 @@ def test_validate_document_edom_reports_proof_without_theorem():
     assert report.warning_count == 1
 
 
+def test_validate_document_edom_reports_duplicate_theorem_numbers():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "thm1", "kind": "theorem", "text": "Theorem", "metadata": {"number": "1.1"}},
+                            {"id": "proof1", "kind": "proof", "text": "Proof."},
+                            {"id": "thm2", "kind": "theorem", "text": "Theorem", "metadata": {"number": "1.1"}},
+                            {"id": "proof2", "kind": "proof", "text": "Proof."},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert any(finding.rule == "SEM010" and finding.node_id == "thm2" for finding in report.findings)
+
+
+def test_validate_document_edom_reports_duplicate_figure_table_definition_numbers():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "fig1", "kind": "figure", "text": "", "metadata": {"number": "1.2"}},
+                            {"id": "fig2", "kind": "figure", "text": "", "metadata": {"number": "1.2"}},
+                            {"id": "tbl1", "kind": "table", "text": "T", "metadata": {"number": "3.4"}},
+                            {"id": "tbl2", "kind": "table", "text": "T", "metadata": {"number": "3.4"}},
+                            {"id": "def1", "kind": "definition", "text": "D", "metadata": {"number": "2.1"}},
+                            {"id": "def2", "kind": "definition", "text": "D", "metadata": {"number": "2.1"}},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    rules = {finding.rule for finding in report.findings}
+    assert {"SEM011", "SEM012", "SEM013"}.issubset(rules)
+
+
 def test_validation_report_writes_files(tmp_path):
     report = ValidationReport([ValidationFinding("EDOM001", "error", "structure", "Bad root")])
 
