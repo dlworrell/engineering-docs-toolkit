@@ -234,6 +234,74 @@ def test_validate_document_edom_reports_caption_without_valid_owner():
     assert any(finding.rule == "SEM022" and finding.node_id == "cap1" for finding in report.findings)
 
 
+def test_validate_document_edom_reports_unresolved_reference():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "p1", "kind": "paragraph", "text": "See missing.", "metadata": {"references": "missing"}}
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert any(finding.rule == "REF001" and finding.node_id == "p1" for finding in report.findings)
+
+
+def test_validate_document_edom_accepts_resolved_reference():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "fig1", "kind": "figure", "text": "", "children": [{"id": "cap1", "kind": "caption", "text": "Figure 1"}]},
+                            {"id": "p1", "kind": "paragraph", "text": "See fig.", "metadata": {"references": ["fig1"]}},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert not any(finding.rule.startswith("REF") for finding in report.findings)
+
+
+def test_validate_document_edom_reports_circular_reference():
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "a", "kind": "paragraph", "text": "A", "metadata": {"references": "b"}},
+                            {"id": "b", "kind": "paragraph", "text": "B", "metadata": {"references": "a"}},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
+
+    assert any(finding.rule == "REF003" for finding in report.findings)
+
+
 def test_validation_report_writes_files(tmp_path):
     report = ValidationReport([ValidationFinding("EDOM001", "error", "structure", "Bad root")])
 
