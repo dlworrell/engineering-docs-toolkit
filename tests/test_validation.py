@@ -37,7 +37,14 @@ def test_validate_document_edom_reports_duplicate_ids():
                 "id": "document",
                 "kind": "document",
                 "children": [
-                    {"id": "page-1", "kind": "page", "children": [{"id": "a", "kind": "paragraph", "text": "One"}, {"id": "a", "kind": "paragraph", "text": "Two"}]}
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "a", "kind": "paragraph", "text": "One"},
+                            {"id": "a", "kind": "paragraph", "text": "Two"},
+                        ],
+                    }
                 ],
             }
         }
@@ -48,28 +55,81 @@ def test_validate_document_edom_reports_duplicate_ids():
 
 
 def test_validate_document_edom_reports_empty_leaf_nodes():
-    report = validate_document_edom({"root": {"id": "document", "kind": "document", "children": [{"id": "page-1", "kind": "page", "children": [{"id": "empty", "kind": "paragraph", "text": ""}]}]}}})
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [{"id": "empty", "kind": "paragraph", "text": ""}],
+                    }
+                ],
+            }
+        }
+    )
 
     assert any(finding.rule == "EDOM011" for finding in report.findings)
     assert report.warning_count == 1
 
 
 def test_validate_document_edom_reports_missing_pages():
-    report = validate_document_edom({"root": {"id": "document", "kind": "document", "children": [{"id": "page-1", "kind": "page"}, {"id": "page-3", "kind": "page"}]}})
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [{"id": "page-1", "kind": "page"}, {"id": "page-3", "kind": "page"}],
+            }
+        }
+    )
 
     assert any(finding.rule == "EDOM013" and finding.page == 2 for finding in report.findings)
     assert report.error_count == 1
 
 
 def test_validate_document_edom_reports_theorem_without_proof():
-    report = validate_document_edom({"root": {"id": "document", "kind": "document", "children": [{"id": "page-1", "kind": "page", "children": [{"id": "thm1", "kind": "theorem", "text": "Theorem 1.1"}, {"id": "p1", "kind": "paragraph", "text": "Text."}]}]}}})
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [
+                            {"id": "thm1", "kind": "theorem", "text": "Theorem 1.1"},
+                            {"id": "p1", "kind": "paragraph", "text": "Text."},
+                        ],
+                    }
+                ],
+            }
+        }
+    )
 
     assert any(finding.rule == "SEM001" and finding.node_id == "thm1" for finding in report.findings)
     assert report.warning_count == 1
 
 
 def test_validate_document_edom_reports_proof_without_theorem():
-    report = validate_document_edom({"root": {"id": "document", "kind": "document", "children": [{"id": "page-1", "kind": "page", "children": [{"id": "proof1", "kind": "proof", "text": "Proof."}]}]}}})
+    report = validate_document_edom(
+        {
+            "root": {
+                "id": "document",
+                "kind": "document",
+                "children": [
+                    {
+                        "id": "page-1",
+                        "kind": "page",
+                        "children": [{"id": "proof1", "kind": "proof", "text": "Proof."}],
+                    }
+                ],
+            }
+        }
+    )
 
     assert any(finding.rule == "SEM002" and finding.node_id == "proof1" for finding in report.findings)
     assert report.warning_count == 1
