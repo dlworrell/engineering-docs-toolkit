@@ -1,3 +1,4 @@
+from .layout_equations import looks_like_equation
 from .layout_model import LayoutBlock
 
 
@@ -41,4 +42,6 @@ def recognize_semantic_kind(block: LayoutBlock) -> str:
             return kind
     if block.kind in KIND_KIND:
         return KIND_KIND[block.kind]
+    if looks_like_equation(block):
+        return "equation"
     return "paragraph"
