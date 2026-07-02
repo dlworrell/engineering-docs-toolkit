@@ -1,9 +1,11 @@
 import argparse
+import json
 from pathlib import Path
 
 from .build import build_project
 from .check import check_project
 from .doctor import doctor_project
+from .document_reports import generate_document_reports
 from .init_project import init_project
 from .pdf_import import import_pdf
 from .project_import import import_project
@@ -20,8 +22,20 @@ def main() -> None:
     sub.add_parser("check", help="check generated project output")
     sub.add_parser("doctor", help="check configured external dependencies")
     sub.add_parser("init", help="initialize an EDT project")
-    project_import = sub.add_parser("import", help="run the project import pipeline")
+    project_import = sub.add_parser(
+        "import",
+        help="run the project import pipeline",
+    )
     project_import.add_argument("--manifest", default="edt/project.yml")
+    report = sub.add_parser(
+        "report",
+        help="validate canonical EDOM and generate document reports",
+    )
+    report.add_argument(
+        "--document",
+        default="output/import/edom/canonical-document.edom.json",
+    )
+    report.add_argument("--output", default="reports/document")
     imp = sub.add_parser("import-pdf", help="write PDF import notes")
     imp.add_argument("source")
     imp.add_argument("output")
@@ -38,14 +52,24 @@ def main() -> None:
             print(issue)
         raise SystemExit(1 if issues else 0)
     elif args.command == "doctor":
-        report = doctor_project(Path.cwd())
-        print(report.to_text(), end="")
-        raise SystemExit(0 if report.ready else 3)
+        doctor_report = doctor_project(Path.cwd())
+        print(doctor_report.to_text(), end="")
+        raise SystemExit(0 if doctor_report.ready else 3)
     elif args.command == "init":
         init_project(Path.cwd())
     elif args.command == "import":
         result = import_project(Path.cwd(), Path(args.manifest))
         print(f"wrote {result.report_path}")
+    elif args.command == "report":
+        document_path = Path(args.document)
+        document_payload = json.loads(
+            document_path.read_text(encoding="utf-8")
+        )
+        result = generate_document_reports(
+            document_payload,
+            Path(args.output),
+        )
+        print(f"wrote {result.report_dir}")
     elif args.command == "import-pdf":
         import_pdf(Path(args.source), Path(args.output))
     elif args.command == "tm-add":
