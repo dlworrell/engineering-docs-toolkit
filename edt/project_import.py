@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from .edom import EdomNode
+from .edom_json import node_to_dict
 from .hash_cache import hash_file, hash_text
 from .layout_model import LayoutBlock, LayoutPage
 from .ocr_engine import NullOcrEngine, OcrEngine
@@ -16,9 +17,12 @@ from .pdf_import import import_pdf
 from .pdf_pages import extract_pdf_pages
 from .reference_resolver import resolve_reference_relationships
 from .semantic_blocks import SemanticBlock
-from .semantic_document import SemanticPage, semantic_page_from_layout
+from .semantic_document import SemanticDocument, SemanticPage, semantic_page_from_layout
 from .semantic_relationships import SemanticRelationship, infer_semantic_relationships
-from .semantic_to_edom import semantic_page_to_edom
+from .semantic_to_edom import (
+    semantic_document_to_canonical_edom,
+    semantic_page_to_edom,
+)
 from .tesseract_ocr import TesseractOcrEngine
 
 
@@ -424,6 +428,47 @@ def assemble_document_edom(root: Path, config: ProjectImportConfig) -> dict[str,
     return {"status": "complete", "document": str(output_path.relative_to(root)), "pages": len(children)}
 
 
+def assemble_canonical_document_edom(root: Path, config: ProjectImportConfig) -> dict[str, object]:
+    semantic_pages: list[SemanticPage] = []
+    sources: list[str] = []
+    for page_number in range(config.first_page, config.last_page + 1):
+        semantic_path = page_artifact_dir(config.pages_dir, page_number) / "semantic.json"
+        if not semantic_path.exists():
+            continue
+        payload = json.loads(semantic_path.read_text(encoding="utf-8"))
+        semantic_page, _relationships = _semantic_page_from_payload(payload)
+        semantic_pages.append(semantic_page)
+        sources.append(str(semantic_path.relative_to(root)))
+
+    document = SemanticDocument(pages=semantic_pages)
+    document.infer_relationships()
+    edom = semantic_document_to_canonical_edom(document, source_id="primary")
+    edom.metadata.update(
+        {
+            "source_pdf": str(config.source_pdf.relative_to(root)),
+            "page_range": f"{config.first_page}-{config.last_page}",
+        }
+    )
+
+    output_path = config.output_dir / "canonical-document.edom.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "source_pages": sources,
+        "page_count": len(semantic_pages),
+        "root": node_to_dict(edom),
+    }
+    output_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "status": "complete",
+        "document": str(output_path.relative_to(root)),
+        "pages": len(semantic_pages),
+        "nodes": len(edom.children),
+    }
+
+
 def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
     root = root or Path.cwd()
     config = load_project_import_config(root, manifest)
@@ -441,6 +486,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
     semantic_results = generate_semantics(root, config)
     edom_results = generate_edoms(root, config)
     document_edom = assemble_document_edom(root, config)
+    canonical_document_edom = assemble_canonical_document_edom(root, config)
 
     if source_exists:
         import_pdf(config.source_pdf, config.output_dir)
@@ -459,6 +505,7 @@ def import_project(root: Path | None = None, manifest: Path | None = None) -> Pr
         "semantic_results": semantic_results,
         "edom_results": edom_results,
         "document_edom": document_edom,
+        "canonical_document_edom": canonical_document_edom,
         "edom_output": str(config.output_dir.relative_to(root)),
         "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
