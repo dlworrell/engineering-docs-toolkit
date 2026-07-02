@@ -3,6 +3,7 @@ from .edom_reference_metadata import add_reference_metadata
 from .reference_exports import resolved_links_from_relationships
 from .semantic_blocks import SemanticBlock
 from .semantic_document import SemanticDocument, SemanticPage
+from .source_region import SourceRegion
 
 
 SEMANTIC_TO_EDOM = {
@@ -21,20 +22,55 @@ SEMANTIC_TO_EDOM = {
 }
 
 
-def semantic_block_to_edom(block: SemanticBlock) -> EdomNode:
-    return EdomNode(kind=SEMANTIC_TO_EDOM.get(block.semantic_kind, "block"), text=block.text, node_id=block.block_id, metadata=dict(block.metadata))
+def semantic_block_to_edom(
+    block: SemanticBlock,
+    *,
+    source_id: str | None = None,
+    page_number: int | None = None,
+) -> EdomNode:
+    node = EdomNode(
+        kind=SEMANTIC_TO_EDOM.get(block.semantic_kind, "block"),
+        text=block.text,
+        node_id=block.block_id,
+        metadata=dict(block.metadata),
+    )
+    if source_id is not None:
+        node.add_source_region(
+            SourceRegion(source_id=source_id, page=page_number)
+        )
+    return node
 
 
-def semantic_page_to_edom(page: SemanticPage) -> EdomNode:
+def semantic_page_to_edom(
+    page: SemanticPage,
+    *,
+    source_id: str = "primary",
+) -> EdomNode:
     root = EdomNode(kind="page", node_id=f"page-{page.page_number}")
+    root.add_source_region(
+        SourceRegion(source_id=source_id, page=page.page_number)
+    )
     for block in page.blocks:
-        root.add(semantic_block_to_edom(block))
+        root.add(
+            semantic_block_to_edom(
+                block,
+                source_id=source_id,
+                page_number=page.page_number,
+            )
+        )
     return root
 
 
-def semantic_document_to_edom(document: SemanticDocument) -> EdomNode:
+def semantic_document_to_edom(
+    document: SemanticDocument,
+    *,
+    source_id: str = "primary",
+) -> EdomNode:
     root = EdomNode(kind="document", node_id="document")
     for page in document.pages:
-        root.add(semantic_page_to_edom(page))
-    add_reference_metadata(root, resolved_links_from_relationships(document.relationships))
+        root.add(semantic_page_to_edom(page, source_id=source_id))
+    add_reference_metadata(
+        root,
+        resolved_links_from_relationships(document.relationships),
+    )
     return root
