@@ -6,8 +6,32 @@ from pathlib import Path
 from typing import Any
 
 
-UNREFERENCED_OK = {"document", "page", "chapter", "section", "frontmatter", "title", "subtitle", "copyright", "toc", "appendix", "bibliography", "index", "glossary", "caption", "proof"}
-REFERENCE_EXPECTED = {"figure", "table", "equation", "theorem", "definition", "lemma", "corollary"}
+UNREFERENCED_OK = {
+    "document",
+    "page",
+    "chapter",
+    "section",
+    "frontmatter",
+    "title",
+    "subtitle",
+    "copyright",
+    "toc",
+    "appendix",
+    "bibliography",
+    "index",
+    "glossary",
+    "caption",
+    "proof",
+}
+REFERENCE_EXPECTED = {
+    "figure",
+    "table",
+    "equation",
+    "theorem",
+    "definition",
+    "lemma",
+    "corollary",
+}
 
 
 @dataclass
@@ -29,9 +53,15 @@ class ReferenceGraph:
         return {
             "summary": {
                 "nodes": len(self.nodes),
-                "edges": sum(len(node.outgoing) for node in self.nodes.values()),
-                "broken": sum(len(node.broken) for node in self.nodes.values()),
-                "orphans": sum(1 for node in self.nodes.values() if node.orphan),
+                "edges": sum(
+                    len(node.outgoing) for node in self.nodes.values()
+                ),
+                "broken": sum(
+                    len(node.broken) for node in self.nodes.values()
+                ),
+                "orphans": sum(
+                    1 for node in self.nodes.values() if node.orphan
+                ),
             },
             "nodes": [asdict(node) for node in self.nodes.values()],
         }
@@ -52,12 +82,19 @@ class ReferenceGraph:
         ]
         for node in self.nodes.values():
             page = "" if node.page is None else str(node.page)
-            lines.append(f"| {node.node_id} | {node.kind} | {page} | {len(node.incoming)} | {len(node.outgoing)} | {len(node.broken)} | {node.orphan} |")
+            lines.append(
+                f"| {node.node_id} | {node.kind} | {page} | "
+                f"{len(node.incoming)} | {len(node.outgoing)} | "
+                f"{len(node.broken)} | {node.orphan} |"
+            )
         return "\n".join(lines) + "\n"
 
     def write_json(self, path: Path) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(self.to_dict(), indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
         return path
 
     def write_markdown(self, path: Path) -> Path:
@@ -66,10 +103,27 @@ class ReferenceGraph:
         return path
 
 
-def _walk_nodes(node: dict[str, Any], page: int | None = None) -> list[tuple[dict[str, Any], int | None]]:
+def _source_region_page(node: dict[str, Any]) -> int | None:
+    regions = node.get("source_regions", [])
+    if not isinstance(regions, list):
+        return None
+    for region in regions:
+        if not isinstance(region, dict):
+            continue
+        page = region.get("page")
+        if type(page) is int and page >= 1:
+            return page
+    return None
+
+
+def _walk_nodes(
+    node: dict[str, Any],
+    page: int | None = None,
+) -> list[tuple[dict[str, Any], int | None]]:
     kind = str(node.get("kind", ""))
-    current_page = page
-    if kind == "page":
+    provenance_page = _source_region_page(node)
+    current_page = provenance_page if provenance_page is not None else page
+    if kind == "page" and provenance_page is None:
         node_id = str(node.get("id", ""))
         if node_id.startswith("page-"):
             try:
@@ -89,7 +143,10 @@ def _node_references(node: dict[str, Any]) -> list[str]:
     metadata = node.get("metadata", {})
     if not isinstance(metadata, dict):
         return []
-    value = metadata.get("references", metadata.get("reference", metadata.get("target_id", "")))
+    value = metadata.get(
+        "references",
+        metadata.get("reference", metadata.get("target_id", "")),
+    )
     if isinstance(value, str):
         return [value] if value else []
     if isinstance(value, list):
@@ -100,10 +157,15 @@ def _node_references(node: dict[str, Any]) -> list[str]:
 def _is_unreferenced_ok(node: dict[str, Any]) -> bool:
     metadata = node.get("metadata", {})
     kind = str(node.get("kind", ""))
-    return kind in UNREFERENCED_OK or (isinstance(metadata, dict) and metadata.get("unreferenced_ok") is True)
+    return kind in UNREFERENCED_OK or (
+        isinstance(metadata, dict)
+        and metadata.get("unreferenced_ok") is True
+    )
 
 
-def build_reference_graph(document_payload: dict[str, object]) -> ReferenceGraph:
+def build_reference_graph(
+    document_payload: dict[str, object],
+) -> ReferenceGraph:
     root = document_payload.get("root", document_payload)
     graph = ReferenceGraph()
     if not isinstance(root, dict):
@@ -114,7 +176,11 @@ def build_reference_graph(document_payload: dict[str, object]) -> ReferenceGraph
         node_id = str(node.get("id", ""))
         if not node_id:
             continue
-        graph.nodes[node_id] = ReferenceGraphNode(node_id=node_id, kind=str(node.get("kind", "")), page=page)
+        graph.nodes[node_id] = ReferenceGraphNode(
+            node_id=node_id,
+            kind=str(node.get("kind", "")),
+            page=page,
+        )
 
     for node, _page in source_nodes:
         node_id = str(node.get("id", ""))
@@ -132,7 +198,11 @@ def build_reference_graph(document_payload: dict[str, object]) -> ReferenceGraph
         if node_id not in graph.nodes:
             continue
         kind = str(node.get("kind", ""))
-        if kind in REFERENCE_EXPECTED and not graph.nodes[node_id].incoming and not _is_unreferenced_ok(node):
+        if (
+            kind in REFERENCE_EXPECTED
+            and not graph.nodes[node_id].incoming
+            and not _is_unreferenced_ok(node)
+        ):
             graph.nodes[node_id].orphan = True
 
     return graph
