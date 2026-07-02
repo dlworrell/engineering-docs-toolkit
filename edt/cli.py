@@ -59,6 +59,17 @@ def main() -> None:
         init_project(Path.cwd())
     elif args.command == "import":
         result = import_project(Path.cwd(), Path(args.manifest))
+        canonical_path = (
+            result.config.output_dir / "canonical-document.edom.json"
+        )
+        if canonical_path.exists():
+            document_payload = json.loads(
+                canonical_path.read_text(encoding="utf-8")
+            )
+            generate_document_reports(
+                document_payload,
+                result.config.report_dir / "document",
+            )
         print(f"wrote {result.report_path}")
     elif args.command == "report":
         document_path = Path(args.document)
