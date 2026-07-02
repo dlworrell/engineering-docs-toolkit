@@ -74,3 +74,31 @@ def semantic_document_to_edom(
         resolved_links_from_relationships(document.relationships),
     )
     return root
+
+
+def semantic_document_to_canonical_edom(
+    document: SemanticDocument,
+    *,
+    source_id: str = "primary",
+) -> EdomNode:
+    """Create document EDOM without treating source pages as structure.
+
+    Blocks remain in source reading order, while their original page locations are
+    retained exclusively as source-region provenance.
+    """
+
+    root = EdomNode(kind="document", node_id="document")
+    for page in document.pages:
+        for block in page.blocks:
+            root.add(
+                semantic_block_to_edom(
+                    block,
+                    source_id=source_id,
+                    page_number=page.page_number,
+                )
+            )
+    add_reference_metadata(
+        root,
+        resolved_links_from_relationships(document.relationships),
+    )
+    return root
