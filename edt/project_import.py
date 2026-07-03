@@ -6,7 +6,6 @@ import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .config import ConfigError, load_project_config
 from .edom import EdomNode
 from .edom_json import node_to_dict
 from .hash_cache import hash_file, hash_text
@@ -69,34 +68,7 @@ def _read_manifest_int(manifest: Path, key: str, default: int) -> int:
         return default
 
 
-def _load_unified_import_config(root: Path) -> ProjectImportConfig:
-    project = load_project_config(root)
-    pdf_source = project.first_source("pdf")
-    if pdf_source is None:
-        raise ConfigError(
-            "edt.toml must define a source with type = \"pdf\" for edt import"
-        )
-
-    return ProjectImportConfig(
-        manifest=root / "edt.toml",
-        source_pdf=root / pdf_source.path,
-        output_dir=root / project.paths.output / "import" / "edom",
-        report_dir=root / project.paths.reports / "import",
-        pages_dir=root / project.paths.work / "pages",
-        first_page=project.import_settings.first_page,
-        last_page=project.import_settings.last_page,
-        ocr_engine=project.import_settings.ocr_engine,
-        ocr_language=project.import_settings.ocr_language,
-    )
-
-
-def load_project_import_config(
-    root: Path,
-    manifest: Path | None = None,
-) -> ProjectImportConfig:
-    if manifest is None and (root / "edt.toml").exists():
-        return _load_unified_import_config(root)
-
+def load_project_import_config(root: Path, manifest: Path | None = None) -> ProjectImportConfig:
     manifest_path = manifest or root / "edt" / "project.yml"
     if not manifest_path.is_absolute():
         manifest_path = root / manifest_path
@@ -342,7 +314,7 @@ def generate_semantics(root: Path, config: ProjectImportConfig) -> list[dict[str
             continue
         layout_payload = json.loads(layout_path.read_text(encoding="utf-8"))
         semantic_page = semantic_page_from_layout(_layout_page_from_payload(layout_payload))
-        relationships = infer_semantic_relationships(semantic_page)
+        relationships = resolve_reference_relationships(semantic_page.blocks, infer_semantic_relationships(semantic_page.blocks))
         semantic_payload = {
             "page": semantic_page.page_number,
             "source_layout": str(layout_path.relative_to(root)),
@@ -355,30 +327,33 @@ def generate_semantics(root: Path, config: ProjectImportConfig) -> list[dict[str
     return results
 
 
-def _semantic_block_from_payload(payload: dict[str, object]) -> SemanticBlock:
-    return SemanticBlock(
-        block_id=str(payload.get("block_id", "")),
-        kind=str(payload.get("kind", "paragraph")),
-        text=str(payload.get("text", "")),
-        metadata={str(key): value for key, value in dict(payload.get("metadata", {})).items()},
-    )
-
-
-def _semantic_page_from_payload(payload: dict[str, object]) -> SemanticPage:
+def _semantic_page_from_payload(payload: dict[str, object]) -> tuple[SemanticPage, list[SemanticRelationship]]:
     page = SemanticPage(page_number=int(payload["page"]))
     for block in payload.get("blocks", []):
-        if isinstance(block, dict):
-            page.blocks.append(_semantic_block_from_payload(block))
-    return page
-
-
-def _relationship_from_payload(payload: dict[str, object]) -> SemanticRelationship:
-    return SemanticRelationship(
-        relationship=str(payload.get("relationship", "")),
-        source_id=str(payload.get("source_id", "")),
-        target_id=str(payload.get("target_id", "")),
-        metadata={str(key): value for key, value in dict(payload.get("metadata", {})).items()},
-    )
+        if not isinstance(block, dict):
+            continue
+        metadata = block.get("metadata", {})
+        page.blocks.append(
+            SemanticBlock(
+                block_id=str(block.get("block_id", "")),
+                semantic_kind=str(block.get("semantic_kind", "paragraph")),
+                text=str(block.get("text", "")),
+                source_kind=str(block.get("source_kind", "")),
+                metadata=dict(metadata) if isinstance(metadata, dict) else {},
+            )
+        )
+    relationships: list[SemanticRelationship] = []
+    for relationship in payload.get("relationships", []):
+        if not isinstance(relationship, dict):
+            continue
+        relationships.append(
+            SemanticRelationship(
+                source_id=str(relationship.get("source_id", "")),
+                target_id=str(relationship.get("target_id", "")),
+                relationship=str(relationship.get("relationship", "")),
+            )
+        )
+    return page, relationships
 
 
 def _edom_node_to_payload(node: EdomNode) -> dict[str, object]:
@@ -387,11 +362,12 @@ def _edom_node_to_payload(node: EdomNode) -> dict[str, object]:
         "kind": node.kind,
         "text": node.text,
         "metadata": node.metadata,
+        "fingerprint": node.fingerprint,
         "children": [_edom_node_to_payload(child) for child in node.children],
     }
 
 
-def generate_page_edom(root: Path, config: ProjectImportConfig) -> list[dict[str, object]]:
+def generate_edoms(root: Path, config: ProjectImportConfig) -> list[dict[str, object]]:
     results: list[dict[str, object]] = []
     for page_number in range(config.first_page, config.last_page + 1):
         artifact_dir = page_artifact_dir(config.pages_dir, page_number)
@@ -403,157 +379,142 @@ def generate_page_edom(root: Path, config: ProjectImportConfig) -> list[dict[str
             results.append({"page": page_number, "status": "waiting_for_semantic"})
             continue
         semantic_payload = json.loads(semantic_path.read_text(encoding="utf-8"))
-        semantic_page = _semantic_page_from_payload(semantic_payload)
-        relationships = [
-            _relationship_from_payload(item)
-            for item in semantic_payload.get("relationships", [])
-            if isinstance(item, dict)
-        ]
-        resolved_relationships = resolve_reference_relationships(semantic_page, relationships)
-        edom = semantic_page_to_edom(semantic_page, resolved_relationships)
+        semantic_page, _relationships = _semantic_page_from_payload(semantic_payload)
+        edom = semantic_page_to_edom(semantic_page)
         edom_payload = {
-            "page": page_number,
+            "page": semantic_page.page_number,
             "source_semantic": str(semantic_path.relative_to(root)),
             "root": _edom_node_to_payload(edom),
-            "relationships": [asdict(relationship) for relationship in resolved_relationships],
         }
         edom_path.write_text(json.dumps(edom_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        _update_page_manifest(manifest_path, edom_status="complete", status="complete")
-        results.append({"page": page_number, "status": "complete", "edom": str(edom_path.relative_to(root)), "nodes": len(edom.children)})
+        _update_page_manifest(manifest_path, edom_status="complete")
+        results.append({"page": page_number, "status": "complete", "edom": str(edom_path.relative_to(root)), "children": len(edom.children)})
     return results
 
 
 def assemble_document_edom(root: Path, config: ProjectImportConfig) -> dict[str, object]:
-    config.output_dir.mkdir(parents=True, exist_ok=True)
-    document = EdomNode(kind="document", node_id="document")
-    imported_pages = 0
+    children: list[dict[str, object]] = []
+    sources: list[str] = []
     for page_number in range(config.first_page, config.last_page + 1):
         edom_path = page_artifact_dir(config.pages_dir, page_number) / "edom.json"
         if not edom_path.exists():
             continue
-        edom_payload = json.loads(edom_path.read_text(encoding="utf-8"))
-        page_root = edom_payload.get("root")
-        if not isinstance(page_root, dict):
-            continue
-        page_node = EdomNode(kind="page", node_id=f"page-{page_number}", metadata={"page_number": page_number})
-        for child_payload in page_root.get("children", []):
-            if not isinstance(child_payload, dict):
-                continue
-            page_node.add(
-                EdomNode(
-                    kind=str(child_payload.get("kind", "paragraph")),
-                    text=str(child_payload.get("text", "")),
-                    node_id=str(child_payload.get("id", "")) or None,
-                    metadata={str(key): value for key, value in dict(child_payload.get("metadata", {})).items()},
-                )
-            )
-        document.add(page_node)
-        imported_pages += 1
+        payload = json.loads(edom_path.read_text(encoding="utf-8"))
+        root_node = payload.get("root")
+        if isinstance(root_node, dict):
+            children.append(root_node)
+            sources.append(str(edom_path.relative_to(root)))
 
+    document_text = json.dumps(children, sort_keys=True, ensure_ascii=False)
+    document = {
+        "id": "document",
+        "kind": "document",
+        "text": "",
+        "metadata": {
+            "source_pdf": str(config.source_pdf.relative_to(root)),
+            "page_range": f"{config.first_page}-{config.last_page}",
+        },
+        "fingerprint": hash_text(document_text),
+        "children": children,
+    }
     output_path = config.output_dir / "document.edom.json"
-    document_payload = {
-        "source_pdf": str(config.source_pdf.relative_to(root)),
-        "page_range": {"start": config.first_page, "end": config.last_page},
-        "imported_pages": imported_pages,
-        "root": _edom_node_to_payload(document),
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "source_pages": sources,
+        "page_count": len(children),
+        "root": document,
     }
-    output_path.write_text(json.dumps(document_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return {
-        "status": "complete" if imported_pages else "waiting_for_page_edom",
-        "document": str(output_path.relative_to(root)),
-        "pages": imported_pages,
-    }
+    output_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return {"status": "complete", "document": str(output_path.relative_to(root)), "pages": len(children)}
 
 
-def assemble_canonical_document_edom(
-    root: Path,
-    config: ProjectImportConfig,
-) -> dict[str, object]:
-    config.output_dir.mkdir(parents=True, exist_ok=True)
-    document = SemanticDocument()
-    imported_pages = 0
-
+def assemble_canonical_document_edom(root: Path, config: ProjectImportConfig) -> dict[str, object]:
+    semantic_pages: list[SemanticPage] = []
+    sources: list[str] = []
     for page_number in range(config.first_page, config.last_page + 1):
         semantic_path = page_artifact_dir(config.pages_dir, page_number) / "semantic.json"
         if not semantic_path.exists():
             continue
-        semantic_payload = json.loads(semantic_path.read_text(encoding="utf-8"))
-        document.add_page(_semantic_page_from_payload(semantic_payload))
-        imported_pages += 1
+        payload = json.loads(semantic_path.read_text(encoding="utf-8"))
+        semantic_page, _relationships = _semantic_page_from_payload(payload)
+        semantic_pages.append(semantic_page)
+        sources.append(str(semantic_path.relative_to(root)))
 
+    document = SemanticDocument(pages=semantic_pages)
     document.infer_relationships()
-    canonical = semantic_document_to_canonical_edom(
-        document,
-        source_id="primary",
-    )
-    canonical.metadata.update(
+    edom = semantic_document_to_canonical_edom(document, source_id="primary")
+    edom.metadata.update(
         {
             "source_pdf": str(config.source_pdf.relative_to(root)),
-            "page_range": {
-                "start": config.first_page,
-                "end": config.last_page,
-            },
+            "page_range": f"{config.first_page}-{config.last_page}",
         }
     )
 
     output_path = config.output_dir / "canonical-document.edom.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "source_pages": sources,
+        "page_count": len(semantic_pages),
+        "root": node_to_dict(edom),
+    }
     output_path.write_text(
-        json.dumps({"root": node_to_dict(canonical)}, indent=2, ensure_ascii=False)
-        + "\n",
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     return {
-        "status": "complete" if imported_pages else "waiting_for_semantics",
+        "status": "complete",
         "document": str(output_path.relative_to(root)),
-        "pages": imported_pages,
-        "nodes": len(canonical.children),
+        "pages": len(semantic_pages),
+        "nodes": len(edom.children),
     }
 
 
-def import_project(root: Path, manifest: Path | None = None, engine: OcrEngine | None = None) -> ProjectImportResult:
+def import_project(root: Path | None = None, manifest: Path | None = None) -> ProjectImportResult:
+    root = root or Path.cwd()
     config = load_project_import_config(root, manifest)
+    config.report_dir.mkdir(parents=True, exist_ok=True)
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+
     source_exists = config.source_pdf.exists()
     fingerprint = hash_file(config.source_pdf) if source_exists else "missing"
+
     write_source_provenance(root, config.source_pdf, fingerprint)
     pages = initialize_page_artifacts(root, config, fingerprint, source_exists)
-    images = extract_page_images(root, config, source_exists)
-    ocr_results = run_ocr(root, config, engine or make_ocr_engine(config))
+    image_results = extract_page_images(root, config, source_exists)
+    ocr_results = run_ocr(root, config, make_ocr_engine(config))
     layout_results = generate_layouts(root, config)
     semantic_results = generate_semantics(root, config)
-    page_edom_results = generate_page_edom(root, config)
-    document_edom_result = assemble_document_edom(root, config)
-    canonical_document_edom_result = assemble_canonical_document_edom(root, config)
-    import_result = None
-    config.report_dir.mkdir(parents=True, exist_ok=True)
+    edom_results = generate_edoms(root, config)
+    document_edom = assemble_document_edom(root, config)
+    canonical_document_edom = assemble_canonical_document_edom(root, config)
+
     if source_exists:
-        import_result = import_pdf(config.source_pdf, config.output_dir)
+        import_pdf(config.source_pdf, config.output_dir)
+
     report = {
-        "status": "source_ready" if source_exists else "waiting_for_source_pdf",
         "manifest": str(config.manifest.relative_to(root)),
         "source_pdf": str(config.source_pdf.relative_to(root)),
         "source_exists": source_exists,
-        "source_sha256": fingerprint,
-        "page_range": {"start": config.first_page, "end": config.last_page},
-        "ocr": {"engine": config.ocr_engine, "language": config.ocr_language},
-        "output_dir": str(config.output_dir.relative_to(root)),
+        "sha256": fingerprint,
         "pages_dir": str(config.pages_dir.relative_to(root)),
+        "page_range": {"start": config.first_page, "end": config.last_page},
         "pages": pages,
-        "image_results": images,
+        "image_results": image_results,
         "ocr_results": ocr_results,
         "layout_results": layout_results,
         "semantic_results": semantic_results,
-        "page_edom_results": page_edom_results,
-        "document_edom": document_edom_result,
-        "canonical_document_edom": canonical_document_edom_result,
-        "import_result": {
-            "source": str(import_result.source.relative_to(root)),
-            "output_dir": str(import_result.output_dir.relative_to(root)),
-            "pages": import_result.pages,
-            "source_hash": import_result.source_hash,
-        }
-        if import_result is not None
-        else None,
+        "edom_results": edom_results,
+        "document_edom": document_edom,
+        "canonical_document_edom": canonical_document_edom,
+        "edom_output": str(config.output_dir.relative_to(root)),
+        "status": "imported" if source_exists else "waiting_for_source_pdf",
     }
     report_path = config.report_dir / "import-report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    return ProjectImportResult(config=config, source_exists=source_exists, fingerprint=fingerprint, report_path=report_path)
+
+    return ProjectImportResult(
+        config=config,
+        source_exists=source_exists,
+        fingerprint=fingerprint,
+        report_path=report_path,
+    )
