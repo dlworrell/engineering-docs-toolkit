@@ -21,6 +21,14 @@ def _validation_fails(report: ValidationReport, fail_on: str) -> bool:
     )
 
 
+def _write_pandoc_output(book_md: Path, output: Path, format_name: str) -> None:
+    if not run_pandoc(book_md, output):
+        raise RuntimeError(
+            f"requested {format_name} output could not be written: {output}"
+        )
+    print(f"wrote {output}")
+
+
 def build_project(root: Path | None = None) -> None:
     root = root or Path.cwd()
     config = load_config(root)
@@ -84,11 +92,9 @@ def build_project(root: Path | None = None) -> None:
     print(f"wrote {book_html}")
 
     if "docx" in config.outputs:
-        if run_pandoc(book_md, out / "book.docx"):
-            print(f"wrote {out / 'book.docx'}")
+        _write_pandoc_output(book_md, out / "book.docx", "docx")
     if "epub" in config.outputs:
-        if run_pandoc(book_md, out / "book.epub"):
-            print(f"wrote {out / 'book.epub'}")
+        _write_pandoc_output(book_md, out / "book.epub", "epub")
 
     context = ProjectContext(root=root, output=out)
     for plugin in default_plugins():
