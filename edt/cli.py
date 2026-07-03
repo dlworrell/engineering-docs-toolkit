@@ -11,6 +11,7 @@ from .init_project import init_project
 from .pdf_import import import_pdf
 from .project_import import import_project
 from .translation_memory import add_term
+from .unified_import import materialize_import_manifest
 
 
 def main() -> None:
@@ -27,7 +28,7 @@ def main() -> None:
         "import",
         help="run the project import pipeline",
     )
-    project_import.add_argument("--manifest", default="edt/project.yml")
+    project_import.add_argument("--manifest")
     report = sub.add_parser(
         "report",
         help="validate canonical EDOM and generate document reports",
@@ -59,7 +60,14 @@ def main() -> None:
     elif args.command == "init":
         init_project(Path.cwd())
     elif args.command == "import":
-        result = import_project(Path.cwd(), Path(args.manifest))
+        root = Path.cwd()
+        if args.manifest is not None:
+            manifest = Path(args.manifest)
+        elif (root / "edt.toml").exists():
+            manifest = materialize_import_manifest(root)
+        else:
+            manifest = Path("edt/project.yml")
+        result = import_project(root, manifest)
         canonical_path = (
             result.config.output_dir / "canonical-document.edom.json"
         )
