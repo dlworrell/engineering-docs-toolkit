@@ -1,6 +1,8 @@
+import json
 from pathlib import Path
 
-from .config import load_config
+from .config import load_config, load_project_config
+from .document_reports import generate_document_reports
 from .hash_cache import hash_file, hash_text
 from .html import markdown_to_html, write_edom_html
 from .manifest import write_manifest
@@ -29,11 +31,25 @@ def build_project(root: Path | None = None) -> None:
     canonical_edom = (
         out / "import" / "edom" / "canonical-document.edom.json"
     )
+    document_reports = None
 
     book_md.write_text(book_text, encoding="utf-8")
     if canonical_edom.exists():
         fingerprint = hash_file(canonical_edom)
+        document_payload = json.loads(
+            canonical_edom.read_text(encoding="utf-8")
+        )
         write_edom_html(canonical_edom, book_html, title=config.title)
+        if (root / "edt.toml").exists():
+            project_config = load_project_config(root)
+            report_root = root / project_config.paths.reports
+        else:
+            report_root = root / "reports"
+        report_result = generate_document_reports(
+            document_payload,
+            report_root / "document",
+        )
+        document_reports = report_result.to_dict()
         source_mode = "canonical-edom"
     else:
         fingerprint = hash_text(book_text)
@@ -68,4 +84,5 @@ def build_project(root: Path | None = None) -> None:
     }
     if canonical_edom.exists():
         manifest["canonical_edom"] = str(canonical_edom.relative_to(root))
+        manifest["document_reports"] = document_reports
     write_manifest(out, manifest)
