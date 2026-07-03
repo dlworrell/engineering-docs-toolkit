@@ -83,12 +83,19 @@ def _check_document_reports(root: Path, manifest: dict[str, Any]) -> list[str]:
 def check_project(root: Path) -> list[str]:
     issues: list[str] = []
     output = root / "output"
-    for html in output.glob("*.html") if output.exists() else []:
+    if not output.exists():
+        return ["missing output directory: output"]
+
+    for html in output.glob("*.html"):
         issues.extend(check_html_accessibility(html))
 
     manifest_path = output / "build-manifest.json"
     manifest = _load_json(manifest_path)
     if manifest is None:
+        if manifest_path.exists():
+            issues.append("invalid build manifest: output/build-manifest.json")
+        else:
+            issues.append("missing build manifest: output/build-manifest.json")
         return issues
 
     if manifest.get("source_mode") == "canonical-edom":
