@@ -25,6 +25,33 @@ def test_check_project_reports_invalid_build_manifest(tmp_path):
     ]
 
 
+def test_check_project_reports_missing_requested_outputs(tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "book.md").write_text("# Book\n", encoding="utf-8")
+    (output / "build-manifest.json").write_text(
+        json.dumps({"source_mode": "markdown", "outputs": ["md", "html", "epub"]}),
+        encoding="utf-8",
+    )
+
+    issues = check_project(tmp_path)
+
+    assert "missing requested output: output/book.html" in issues
+    assert "missing requested output: output/book.epub" in issues
+    assert "missing requested output: output/book.md" not in issues
+
+
+def test_check_project_reports_unknown_requested_outputs(tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "build-manifest.json").write_text(
+        json.dumps({"source_mode": "markdown", "outputs": ["pdf"]}),
+        encoding="utf-8",
+    )
+
+    assert check_project(tmp_path) == ["unknown requested output: pdf"]
+
+
 def test_check_project_reports_canonical_quality_issues(tmp_path):
     output = tmp_path / "output"
     report_dir = tmp_path / "reports" / "document"
@@ -49,10 +76,15 @@ def test_check_project_reports_canonical_quality_issues(tmp_path):
         encoding="utf-8",
     )
     output.mkdir(exist_ok=True)
+    (output / "book.html").write_text(
+        "<!doctype html><html><body><main></main></body></html>",
+        encoding="utf-8",
+    )
     (output / "build-manifest.json").write_text(
         json.dumps(
             {
                 "source_mode": "canonical-edom",
+                "outputs": ["html"],
                 "canonical_edom": "output/import/edom/canonical-document.edom.json",
                 "document_reports": {
                     "validation": {
@@ -89,10 +121,15 @@ def test_check_project_reports_missing_canonical_report_files(tmp_path):
         encoding="utf-8",
     )
     output.mkdir(exist_ok=True)
+    (output / "book.html").write_text(
+        "<!doctype html><html><body><main></main></body></html>",
+        encoding="utf-8",
+    )
     (output / "build-manifest.json").write_text(
         json.dumps(
             {
                 "source_mode": "canonical-edom",
+                "outputs": ["html"],
                 "canonical_edom": "output/import/edom/canonical-document.edom.json",
                 "document_reports": {
                     "validation": {
