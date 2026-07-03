@@ -17,11 +17,16 @@ def _load_json(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
-def _check_report_file(path: Path, label: str) -> list[str]:
+def _check_report_file(
+    path: Path,
+    label: str,
+    display_path: str | None = None,
+) -> list[str]:
+    report_path = display_path or str(path)
     if not path.exists():
-        return [f"missing {label}: {path}"]
+        return [f"missing {label}: {report_path}"]
     if _load_json(path) is None:
-        return [f"invalid {label}: {path}"]
+        return [f"invalid {label}: {report_path}"]
     return []
 
 
@@ -51,7 +56,13 @@ def _check_document_reports(root: Path, manifest: dict[str, Any]) -> list[str]:
     ):
         report_path = report.get("json")
         if isinstance(report_path, str):
-            issues.extend(_check_report_file(root / report_path, label))
+            issues.extend(
+                _check_report_file(
+                    root / report_path,
+                    label,
+                    display_path=report_path,
+                )
+            )
         else:
             issues.append(f"canonical EDOM build is missing {label} path")
 
