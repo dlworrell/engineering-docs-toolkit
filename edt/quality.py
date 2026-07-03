@@ -40,7 +40,10 @@ class QualityReport:
 
     def write_json(self, path: Path) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(self.to_dict(), indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
         return path
 
     def write_markdown(self, path: Path) -> Path:
@@ -49,22 +52,47 @@ class QualityReport:
         return path
 
 
-def _score_from_findings(validation_report: ValidationReport, category: str) -> float:
-    errors = sum(1 for finding in validation_report.findings if finding.category == category and finding.severity == "error")
-    warnings = sum(1 for finding in validation_report.findings if finding.category == category and finding.severity == "warning")
+def _score_from_findings(
+    validation_report: ValidationReport,
+    category: str,
+) -> float:
+    errors = sum(
+        1
+        for finding in validation_report.findings
+        if finding.category == category and finding.severity == "error"
+    )
+    warnings = sum(
+        1
+        for finding in validation_report.findings
+        if finding.category == category and finding.severity == "warning"
+    )
     score = 100.0 - (errors * 25.0) - (warnings * 5.0)
     return max(0.0, score)
 
 
-def build_quality_report(validation_report: ValidationReport, reference_graph: ReferenceGraph) -> QualityReport:
+def build_quality_report(
+    validation_report: ValidationReport,
+    reference_graph: ReferenceGraph,
+) -> QualityReport:
     structural_score = _score_from_findings(validation_report, "structure")
     semantic_score = _score_from_findings(validation_report, "semantic")
     reference_score = _score_from_findings(validation_report, "reference")
-    overall_score = round((structural_score + semantic_score + reference_score) / 3.0, 1)
+    overall_score = round(
+        (structural_score + semantic_score + reference_score) / 3.0,
+        1,
+    )
     graph_payload = reference_graph.to_dict()["summary"]
     broken_references = int(graph_payload["broken"])
     orphan_references = int(graph_payload["orphans"])
-    publication_ready = validation_report.error_count == 0 and broken_references == 0 and overall_score >= 90.0
+    has_document_content = any(
+        node.kind != "document" for node in reference_graph.nodes.values()
+    )
+    publication_ready = (
+        has_document_content
+        and validation_report.error_count == 0
+        and broken_references == 0
+        and overall_score >= 90.0
+    )
     return QualityReport(
         structural_score=round(structural_score, 1),
         semantic_score=round(semantic_score, 1),
