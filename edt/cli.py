@@ -6,6 +6,7 @@ from .build import build_project
 from .check import check_project
 from .doctor import doctor_project
 from .document_reports import generate_document_reports
+from .html import write_edom_html
 from .init_project import init_project
 from .pdf_import import import_pdf
 from .project_import import import_project
@@ -69,6 +70,10 @@ def main() -> None:
             generate_document_reports(
                 document_payload,
                 result.config.report_dir / "document",
+            )
+            write_edom_html(
+                canonical_path,
+                result.config.output_dir.parent / "document.html",
             )
         print(f"wrote {result.report_path}")
     elif args.command == "report":
