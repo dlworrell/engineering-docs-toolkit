@@ -6,6 +6,13 @@ from typing import Any
 
 from .accessibility import check_html_accessibility
 
+OUTPUT_ARTIFACTS = {
+    "md": "output/book.md",
+    "html": "output/book.html",
+    "docx": "output/book.docx",
+    "epub": "output/book.epub",
+}
+
 
 def _load_json(path: Path) -> dict[str, Any] | None:
     if not path.exists():
@@ -28,6 +35,25 @@ def _check_report_file(
     if _load_json(path) is None:
         return [f"invalid {label}: {report_path}"]
     return []
+
+
+def _check_requested_outputs(root: Path, manifest: dict[str, Any]) -> list[str]:
+    outputs = manifest.get("outputs", [])
+    if not isinstance(outputs, list):
+        return ["build manifest has invalid outputs list"]
+
+    issues: list[str] = []
+    for output in outputs:
+        if not isinstance(output, str):
+            issues.append("build manifest contains invalid output name")
+            continue
+        artifact = OUTPUT_ARTIFACTS.get(output)
+        if artifact is None:
+            issues.append(f"unknown requested output: {output}")
+            continue
+        if not (root / artifact).exists():
+            issues.append(f"missing requested output: {artifact}")
+    return issues
 
 
 def _check_document_reports(root: Path, manifest: dict[str, Any]) -> list[str]:
@@ -97,6 +123,8 @@ def check_project(root: Path) -> list[str]:
         else:
             issues.append("missing build manifest: output/build-manifest.json")
         return issues
+
+    issues.extend(_check_requested_outputs(root, manifest))
 
     if manifest.get("source_mode") == "canonical-edom":
         canonical_path = manifest.get("canonical_edom")
