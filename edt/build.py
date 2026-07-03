@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from .config import load_config
-from .hash_cache import hash_text
-from .html import markdown_to_html
+from .hash_cache import hash_file, hash_text
+from .html import markdown_to_html, write_edom_html
 from .manifest import write_manifest
 from .pandoc import run_pandoc
 from .plugin import ProjectContext
@@ -24,11 +24,25 @@ def build_project(root: Path | None = None) -> None:
         parts.append(chapter.read_text(encoding="utf-8").strip())
 
     book_text = "\n\n".join(parts) + "\n"
-    fingerprint = hash_text(book_text)
     book_md = out / "book.md"
     book_html = out / "book.html"
+    canonical_edom = (
+        out / "import" / "edom" / "canonical-document.edom.json"
+    )
+
     book_md.write_text(book_text, encoding="utf-8")
-    book_html.write_text(markdown_to_html(book_text, config.title), encoding="utf-8")
+    if canonical_edom.exists():
+        fingerprint = hash_file(canonical_edom)
+        write_edom_html(canonical_edom, book_html, title=config.title)
+        source_mode = "canonical-edom"
+    else:
+        fingerprint = hash_text(book_text)
+        book_html.write_text(
+            markdown_to_html(book_text, config.title),
+            encoding="utf-8",
+        )
+        source_mode = "markdown"
+
     (out / "book.hash").write_text(fingerprint + "\n", encoding="utf-8")
 
     print(f"wrote {book_md}")
@@ -45,4 +59,13 @@ def build_project(root: Path | None = None) -> None:
     for plugin in default_plugins():
         plugin.run(context)
 
-    write_manifest(out, {"title": config.title, "chapters": len(chapters), "fingerprint": fingerprint, "outputs": config.outputs})
+    manifest = {
+        "title": config.title,
+        "chapters": len(chapters),
+        "fingerprint": fingerprint,
+        "outputs": config.outputs,
+        "source_mode": source_mode,
+    }
+    if canonical_edom.exists():
+        manifest["canonical_edom"] = str(canonical_edom.relative_to(root))
+    write_manifest(out, manifest)
