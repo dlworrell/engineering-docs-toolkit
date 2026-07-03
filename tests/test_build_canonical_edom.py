@@ -1,7 +1,5 @@
 import json
 
-import pytest
-
 from edt.build import build_project
 
 
@@ -80,7 +78,7 @@ def test_build_uses_canonical_edom_when_available(tmp_path):
     )
 
 
-def test_build_rejects_unsupported_outputs_from_canonical_edom(tmp_path):
+def test_build_uses_canonical_markdown_for_pandoc_outputs(tmp_path, monkeypatch):
     source = tmp_path / "source" / "english"
     source.mkdir(parents=True)
     (source / "01-stale.md").write_text(
@@ -105,9 +103,17 @@ def test_build_rejects_unsupported_outputs_from_canonical_edom(tmp_path):
         / "canonical-document.edom.json"
     )
     write_canonical_edom(canonical)
+    pandoc_sources = []
 
-    with pytest.raises(RuntimeError, match="docx"):
-        build_project(tmp_path)
+    def fake_pandoc(source_path, output_path):
+        pandoc_sources.append(source_path.read_text(encoding="utf-8"))
+        output_path.write_text("converted", encoding="utf-8")
+        return True
 
-    assert not (tmp_path / "output" / "book.docx").exists()
-    assert not (tmp_path / "output" / "book.html").exists()
+    monkeypatch.setattr("edt.build.run_pandoc", fake_pandoc)
+
+    build_project(tmp_path)
+
+    assert pandoc_sources == ["# HERKULES\n\nCanonical semantic content.\n"]
+    assert (tmp_path / "output" / "book.docx").exists()
+    assert "This text must not drive DOCX output." not in pandoc_sources[0]
