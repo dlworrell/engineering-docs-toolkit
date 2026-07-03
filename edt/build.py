@@ -12,20 +12,12 @@ from .plugin import ProjectContext
 from .plugin_registry import default_plugins
 from .validation import SEVERITIES, ValidationReport
 
-UNSUPPORTED_CANONICAL_OUTPUTS = {"docx", "epub"}
-
 
 def _validation_fails(report: ValidationReport, fail_on: str) -> bool:
     threshold = SEVERITIES.index(fail_on)
     return any(
         SEVERITIES.index(finding.severity) >= threshold
         for finding in report.findings
-    )
-
-
-def _unsupported_canonical_outputs(outputs: list[str]) -> list[str]:
-    return sorted(
-        output for output in outputs if output in UNSUPPORTED_CANONICAL_OUTPUTS
     )
 
 
@@ -52,14 +44,6 @@ def build_project(root: Path | None = None) -> None:
     document_reports = None
     validation_failure = False
     fail_on = None
-
-    if canonical_edom.exists():
-        unsupported_outputs = _unsupported_canonical_outputs(config.outputs)
-        if unsupported_outputs:
-            raise RuntimeError(
-                "canonical EDOM build does not support requested outputs: "
-                + ", ".join(unsupported_outputs)
-            )
 
     if canonical_edom.exists():
         fingerprint = hash_file(canonical_edom)
