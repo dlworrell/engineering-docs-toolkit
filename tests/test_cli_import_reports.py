@@ -33,12 +33,19 @@ def test_import_command_generates_document_reports(tmp_path, monkeypatch, capsys
         / "edom"
         / "canonical-document.edom.json"
     )
+    published_html = tmp_path / "output" / "import" / "document.html"
 
     assert canonical.exists()
+    assert published_html.exists()
     assert import_report.exists()
     assert (report_dir / "validation.json").exists()
     assert (report_dir / "reference-graph.json").exists()
     assert (report_dir / "quality.json").exists()
+
+    html = published_html.read_text(encoding="utf-8")
+    assert "<!doctype html>" in html
+    assert 'data-edt-kind="document"' not in html
+    assert '<main role="main">' in html
 
     quality = json.loads(
         (report_dir / "quality.json").read_text(encoding="utf-8")
