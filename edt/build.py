@@ -3,6 +3,7 @@ from pathlib import Path
 
 from .config import load_config, load_project_config
 from .document_reports import generate_document_reports
+from .edom_markdown import write_edom_markdown
 from .hash_cache import hash_file, hash_text
 from .html import markdown_to_html, write_edom_html
 from .manifest import write_manifest
@@ -60,12 +61,12 @@ def build_project(root: Path | None = None) -> None:
                 + ", ".join(unsupported_outputs)
             )
 
-    book_md.write_text(book_text, encoding="utf-8")
     if canonical_edom.exists():
         fingerprint = hash_file(canonical_edom)
         document_payload = json.loads(
             canonical_edom.read_text(encoding="utf-8")
         )
+        write_edom_markdown(canonical_edom, book_md)
         write_edom_html(canonical_edom, book_html, title=config.title)
         if (root / "edt.toml").exists():
             project_config = load_project_config(root)
@@ -85,6 +86,7 @@ def build_project(root: Path | None = None) -> None:
             )
         source_mode = "canonical-edom"
     else:
+        book_md.write_text(book_text, encoding="utf-8")
         fingerprint = hash_text(book_text)
         book_html.write_text(
             markdown_to_html(book_text, config.title),
