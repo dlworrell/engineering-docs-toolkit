@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from edt.build import build_project
 
 
@@ -117,3 +119,27 @@ def test_build_uses_canonical_markdown_for_pandoc_outputs(tmp_path, monkeypatch)
     assert pandoc_sources == ["# HERKULES\n\nCanonical semantic content.\n"]
     assert (tmp_path / "output" / "book.docx").exists()
     assert "This text must not drive DOCX output." not in pandoc_sources[0]
+
+
+def test_build_fails_when_requested_pandoc_output_is_unavailable(
+    tmp_path,
+    monkeypatch,
+):
+    source = tmp_path / "source" / "english"
+    source.mkdir(parents=True)
+    (source / "01.md").write_text("# Book\n\nBody.\n", encoding="utf-8")
+    (tmp_path / "book.yaml").write_text(
+        "title: Book\n"
+        "source_dir: source/english\n"
+        "output_dir: output\n"
+        "outputs:\n"
+        "  - html\n"
+        "  - docx\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("edt.build.run_pandoc", lambda source_path, output_path: False)
+
+    with pytest.raises(RuntimeError, match="requested docx output"):
+        build_project(tmp_path)
+
+    assert not (tmp_path / "output" / "book.docx").exists()
