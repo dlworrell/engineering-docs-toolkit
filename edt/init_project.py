@@ -13,6 +13,11 @@ reports = "reports"
 output = "output"
 
 [[sources]]
+id = "primary"
+type = "pdf"
+path = "source/original/document.pdf"
+
+[[sources]]
 id = "chapters"
 type = "markdown"
 path = "source/english"
