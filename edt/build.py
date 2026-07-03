@@ -9,6 +9,15 @@ from .manifest import write_manifest
 from .pandoc import run_pandoc
 from .plugin import ProjectContext
 from .plugin_registry import default_plugins
+from .validation import SEVERITIES, ValidationReport
+
+
+def _validation_fails(report: ValidationReport, fail_on: str) -> bool:
+    threshold = SEVERITIES.index(fail_on)
+    return any(
+        SEVERITIES.index(finding.severity) >= threshold
+        for finding in report.findings
+    )
 
 
 def build_project(root: Path | None = None) -> None:
@@ -32,6 +41,8 @@ def build_project(root: Path | None = None) -> None:
         out / "import" / "edom" / "canonical-document.edom.json"
     )
     document_reports = None
+    validation_failure = False
+    fail_on = None
 
     book_md.write_text(book_text, encoding="utf-8")
     if canonical_edom.exists():
@@ -43,6 +54,7 @@ def build_project(root: Path | None = None) -> None:
         if (root / "edt.toml").exists():
             project_config = load_project_config(root)
             report_root = root / project_config.paths.reports
+            fail_on = project_config.validation.fail_on
         else:
             report_root = root / "reports"
         report_result = generate_document_reports(
@@ -50,6 +62,11 @@ def build_project(root: Path | None = None) -> None:
             report_root / "document",
         )
         document_reports = report_result.to_dict()
+        if fail_on is not None:
+            validation_failure = _validation_fails(
+                report_result.validation,
+                fail_on,
+            )
         source_mode = "canonical-edom"
     else:
         fingerprint = hash_text(book_text)
@@ -85,4 +102,12 @@ def build_project(root: Path | None = None) -> None:
     if canonical_edom.exists():
         manifest["canonical_edom"] = str(canonical_edom.relative_to(root))
         manifest["document_reports"] = document_reports
+        if fail_on is not None:
+            manifest["validation_fail_on"] = fail_on
+            manifest["validation_passed"] = not validation_failure
     write_manifest(out, manifest)
+
+    if validation_failure:
+        raise RuntimeError(
+            f"canonical EDOM validation failed at severity {fail_on}"
+        )
