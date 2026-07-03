@@ -62,6 +62,7 @@ def test_build_uses_canonical_edom_when_available(tmp_path):
 
     build_project(tmp_path)
 
+    markdown = (tmp_path / "output" / "book.md").read_text(encoding="utf-8")
     html = (tmp_path / "output" / "book.html").read_text(encoding="utf-8")
     manifest = json.loads(
         (tmp_path / "output" / "build-manifest.json").read_text(
@@ -69,6 +70,8 @@ def test_build_uses_canonical_edom_when_available(tmp_path):
         )
     )
 
+    assert "Canonical semantic content." in markdown
+    assert "This text must not drive HTML output." not in markdown
     assert "Canonical semantic content." in html
     assert "This text must not drive HTML output." not in html
     assert manifest["source_mode"] == "canonical-edom"
