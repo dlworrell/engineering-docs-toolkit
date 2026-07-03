@@ -12,6 +12,8 @@ from .plugin import ProjectContext
 from .plugin_registry import default_plugins
 from .validation import SEVERITIES, ValidationReport
 
+SUPPORTED_OUTPUTS = {"md", "html", "docx", "epub"}
+
 
 def _validation_fails(report: ValidationReport, fail_on: str) -> bool:
     threshold = SEVERITIES.index(fail_on)
@@ -19,6 +21,10 @@ def _validation_fails(report: ValidationReport, fail_on: str) -> bool:
         SEVERITIES.index(finding.severity) >= threshold
         for finding in report.findings
     )
+
+
+def _unsupported_outputs(outputs: list[str]) -> list[str]:
+    return sorted(output for output in outputs if output not in SUPPORTED_OUTPUTS)
 
 
 def _write_pandoc_output(book_md: Path, output: Path, format_name: str) -> None:
@@ -32,6 +38,12 @@ def _write_pandoc_output(book_md: Path, output: Path, format_name: str) -> None:
 def build_project(root: Path | None = None) -> None:
     root = root or Path.cwd()
     config = load_config(root)
+    unsupported_outputs = _unsupported_outputs(config.outputs)
+    if unsupported_outputs:
+        raise RuntimeError(
+            "unsupported requested outputs: " + ", ".join(unsupported_outputs)
+        )
+
     source = root / config.source_dir
     out = root / config.output_dir
     out.mkdir(exist_ok=True)
