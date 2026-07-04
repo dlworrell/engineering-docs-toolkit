@@ -3,10 +3,6 @@ name: HERKULES Acceptance
 on:
   workflow_dispatch:
     inputs:
-      herkules_pdf_path:
-        description: Path to HERKULES PDF on the runner
-        required: true
-        default: /opt/edt/herkules/herkules-manual.pdf
       first_page:
         description: First page to import
         required: true
@@ -26,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      EDT_HERKULES_SOURCE_PDF: ${{ inputs.herkules_pdf_path }}
       EDT_HERKULES_FIRST_PAGE: ${{ inputs.first_page }}
       EDT_HERKULES_LAST_PAGE: ${{ inputs.last_page }}
       EDT_HERKULES_OCR_ENGINE: ${{ inputs.ocr_engine }}
@@ -50,10 +45,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest
-
-      - name: Verify HERKULES source exists
-        run: |
-          test -f "$EDT_HERKULES_SOURCE_PDF"
 
       - name: Run HERKULES acceptance harness
         run: |
