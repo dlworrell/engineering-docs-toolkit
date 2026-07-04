@@ -9,15 +9,27 @@ import pytest
 from edt.cli import main
 
 
+def _first_existing(paths):
+    for path in paths:
+        if path.is_file():
+            return path
+    return None
+
+
 def _herkules_source_pdf() -> Path | None:
     configured = os.environ.get("EDT_HERKULES_SOURCE_PDF")
     if configured:
         path = Path(configured)
-        if path.exists():
+        if path.is_file():
             return path
 
+    checked_in_sources = sorted((Path.cwd() / "source" / "original").glob("*.pdf"))
+    source = _first_existing(checked_in_sources)
+    if source is not None:
+        return source
+
     fixture = Path(__file__).parent / "fixtures" / "herkules-manual.pdf"
-    if fixture.exists():
+    if fixture.is_file():
         return fixture
 
     return None
