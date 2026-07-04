@@ -24,17 +24,41 @@ def _load_json(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
-def _check_report_file(
+def _as_int(value: Any) -> int:
+    if type(value) is int:
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _load_report_file(
     path: Path,
     label: str,
     display_path: str | None = None,
-) -> list[str]:
+) -> tuple[dict[str, Any] | None, list[str]]:
     report_path = display_path or str(path)
     if not path.exists():
-        return [f"missing {label}: {report_path}"]
-    if _load_json(path) is None:
-        return [f"invalid {label}: {report_path}"]
-    return []
+        return None, [f"missing {label}: {report_path}"]
+    payload = _load_json(path)
+    if payload is None:
+        return None, [f"invalid {label}: {report_path}"]
+    return payload, []
+
+
+def _summary_payload(
+    payload: dict[str, Any],
+    label: str,
+) -> tuple[dict[str, Any], list[str]]:
+    summary = payload.get("summary")
+    if not isinstance(summary, dict):
+        return {}, [f"{label} is missing summary"]
+    return summary, []
 
 
 def _check_requested_outputs(root: Path, manifest: dict[str, Any]) -> list[str]:
@@ -75,6 +99,11 @@ def _check_document_reports(root: Path, manifest: dict[str, Any]) -> list[str]:
         issues.append("canonical EDOM build is missing quality report")
         quality = {}
 
+    loaded_reports: dict[str, dict[str, Any] | None] = {
+        "validation report": None,
+        "reference graph report": None,
+        "quality report": None,
+    }
     for label, report in (
         ("validation report", validation),
         ("reference graph report", reference_graph),
@@ -82,26 +111,49 @@ def _check_document_reports(root: Path, manifest: dict[str, Any]) -> list[str]:
     ):
         report_path = report.get("json")
         if isinstance(report_path, str):
-            issues.extend(
-                _check_report_file(
-                    root / report_path,
-                    label,
-                    display_path=report_path,
-                )
+            payload, report_issues = _load_report_file(
+                root / report_path,
+                label,
+                display_path=report_path,
             )
+            issues.extend(report_issues)
+            loaded_reports[label] = payload
         else:
             issues.append(f"canonical EDOM build is missing {label} path")
 
-    validation_errors = int(validation.get("errors", 0))
-    if validation_errors:
-        issues.append(f"validation errors: {validation_errors}")
+    validation_payload = loaded_reports["validation report"]
+    if validation_payload is not None:
+        validation_summary, summary_issues = _summary_payload(
+            validation_payload,
+            "validation report",
+        )
+        issues.extend(summary_issues)
+        validation_errors = _as_int(validation_summary.get("errors", 0))
+        if validation_errors:
+            issues.append(f"validation errors: {validation_errors}")
 
-    broken_references = int(reference_graph.get("broken", 0))
-    if broken_references:
-        issues.append(f"broken references: {broken_references}")
+    reference_payload = loaded_reports["reference graph report"]
+    if reference_payload is not None:
+        reference_summary, summary_issues = _summary_payload(
+            reference_payload,
+            "reference graph report",
+        )
+        issues.extend(summary_issues)
+        broken_references = _as_int(reference_summary.get("broken", 0))
+        if broken_references:
+            issues.append(f"broken references: {broken_references}")
 
-    if quality.get("publication_ready") is False:
-        issues.append("document is not publication ready")
+    quality_payload = loaded_reports["quality report"]
+    if quality_payload is not None:
+        publication_ready = quality_payload.get("publication_ready")
+        if publication_ready is False:
+            issues.append("document is not publication ready")
+        elif publication_ready is not True:
+            issues.append("quality report is missing publication readiness")
+
+    if manifest.get("validation_passed") is False:
+        fail_on = manifest.get("validation_fail_on", "configured threshold")
+        issues.append(f"canonical EDOM validation failed at severity {fail_on}")
 
     return issues
 
