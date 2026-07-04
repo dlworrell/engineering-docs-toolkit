@@ -4,7 +4,7 @@ Date: 2026-07-03
 
 ## Status
 
-P0 remediation is functionally complete as of test 608 green and test 610 green.
+P0 remediation is functionally complete as of tests 608, 610, 611, and 612 passing.
 
 The Engineering Docs Toolkit is no longer only a collection of isolated components. The current product path supports a user-visible workflow from project initialization through import, canonical EDOM generation, validation/report generation, and publication output.
 
