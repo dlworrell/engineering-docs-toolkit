@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .accessibility import check_html_accessibility
+from .hash_cache import hash_file
 
 OUTPUT_ARTIFACTS = {
     "md": "output/book.md",
@@ -78,6 +79,26 @@ def _check_requested_outputs(root: Path, manifest: dict[str, Any]) -> list[str]:
         if not (root / artifact).exists():
             issues.append(f"missing requested output: {artifact}")
     return issues
+
+
+def _check_fingerprint(
+    root: Path,
+    manifest: dict[str, Any],
+    source_path: str,
+    source_label: str,
+) -> list[str]:
+    fingerprint = manifest.get("fingerprint")
+    if not isinstance(fingerprint, str) or not fingerprint:
+        return ["build manifest is missing source fingerprint"]
+
+    path = root / source_path
+    if not path.exists():
+        return [f"missing {source_label}: {source_path}"]
+
+    current_fingerprint = hash_file(path)
+    if current_fingerprint != fingerprint:
+        return [f"stale build manifest: {source_label} changed since build"]
+    return []
 
 
 def _check_document_reports(root: Path, manifest: dict[str, Any]) -> list[str]:
@@ -181,7 +202,16 @@ def check_project(root: Path) -> list[str]:
     if manifest.get("source_mode") == "canonical-edom":
         canonical_path = manifest.get("canonical_edom")
         if isinstance(canonical_path, str):
-            if not (root / canonical_path).exists():
+            if (root / canonical_path).exists():
+                issues.extend(
+                    _check_fingerprint(
+                        root,
+                        manifest,
+                        canonical_path,
+                        "canonical EDOM",
+                    )
+                )
+            else:
                 issues.append(f"missing canonical EDOM: {canonical_path}")
         else:
             issues.append("canonical EDOM build is missing canonical path")
