@@ -70,6 +70,13 @@ def _run_cli(monkeypatch, *args: str) -> None:
 
 
 def test_herkules_acceptance_import_build_check(tmp_path, monkeypatch):
+    enabled = os.environ.get("EDT_RUN_HERKULES_ACCEPTANCE") == "1"
+    configured_source = os.environ.get("EDT_HERKULES_SOURCE_PDF")
+    if not enabled and not configured_source:
+        pytest.skip(
+            "HERKULES acceptance is opt-in; set EDT_RUN_HERKULES_ACCEPTANCE=1"
+        )
+
     source_pdf = _herkules_source_pdf()
     if source_pdf is None:
         pytest.skip(
