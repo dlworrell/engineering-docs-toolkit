@@ -5,27 +5,29 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
-from .math_parser import replace_math
+from .math_parser import DISPLAY, INLINE
+from .mathml import display_mathml, inline_mathml
+
+
+def _render_matches(text: str, pattern, render, rest) -> str:
+    # Markup is built only from the pattern's matches in the source text; every
+    # other character is escaped. Markup in the source, including a literal
+    # <math> element, is never passed through (EDT-001).
+    pieces = []
+    cursor = 0
+    for match in pattern.finditer(text):
+        pieces.append(rest(text[cursor:match.start()]))
+        pieces.append(render(match.group(1).strip()))
+        cursor = match.end()
+    pieces.append(rest(text[cursor:]))
+    return ''.join(pieces)
 
 
 def render_inline(text: str) -> str:
-    rendered = replace_math(text)
-    pieces = []
-    cursor = 0
-    while True:
-        start = rendered.find('<math ', cursor)
-        if start == -1:
-            pieces.append(escape(rendered[cursor:]))
-            break
-        end = rendered.find('</math>', start)
-        if end == -1:
-            pieces.append(escape(rendered[cursor:]))
-            break
-        end += len('</math>')
-        pieces.append(escape(rendered[cursor:start]))
-        pieces.append(rendered[start:end])
-        cursor = end
-    return ''.join(pieces)
+    def inline(segment: str) -> str:
+        return _render_matches(segment, INLINE, inline_mathml, escape)
+
+    return _render_matches(text, DISPLAY, display_mathml, inline)
 
 
 def markdown_to_html(text: str, title: str) -> str:

@@ -4,6 +4,10 @@ This changelog records project-level engineering milestones for Engineering Docs
 
 ## Unreleased
 
+### Security
+
+- EDT-001: HTML output no longer passes through a literal `<math>` element found in document text. MathML is generated only from `$...$` and `$$...$$` delimiters, and all other text is escaped.
+
 ### Documentation
 
 - Updated project documentation to describe EDT as a semantic document-understanding and publication engine.
