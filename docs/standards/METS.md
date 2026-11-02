@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:23bc871d-008d-4e8b-aa55-2dd42dcd317e
+-->
+
 # METS
 
 ## Purpose

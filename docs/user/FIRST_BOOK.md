@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:0c4c3db2-6f21-40e8-9280-f40916c6e7b6
+-->
+
 # First Book
 
 This guide introduces the recommended workflow for creating an EDT project and producing a published technical document.

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b0350d40-6bb9-44f8-9a4e-a61f99218587
+-->
+
 # Engineering Documents Toolkit (EDT)
 ## Project Charter
 

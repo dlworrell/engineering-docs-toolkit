@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:9d7d5df5-0d3f-46ae-b833-ae22e8578180
+-->
+
 # Engineering Docs Toolkit Project Plan
 
 ## Purpose

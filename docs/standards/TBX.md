@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:20294ac7-f69f-4981-b394-786ec3fc9f76
+-->
+
 # TBX
 
 TBX (TermBase eXchange) is an XML standard for exchanging structured terminology data.

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b258ecdf-0744-4aa4-bc64-4fe82b2e6320
+-->
+
 # OWL
 
 ## Purpose

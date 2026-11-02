@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:feb1602d-5be1-48c4-8415-7c76d54b7e9f
+-->
+
 # W3C PROV
 
 ## Purpose

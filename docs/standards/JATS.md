@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:49aa7bce-d7a7-439d-ac42-12bd78763b7a
+-->
+
 # JATS
 
 ## Purpose

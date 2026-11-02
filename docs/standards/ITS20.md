@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:5bafbeb8-dc85-4d66-b4a2-3ddbc72e4581
+-->
+
 # ITS 2.0
 
 ## Purpose

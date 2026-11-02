@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:81c2a451-1791-4288-ab05-043aa0238160
+-->
+
 # Research Organization Registry
 
 ## Purpose

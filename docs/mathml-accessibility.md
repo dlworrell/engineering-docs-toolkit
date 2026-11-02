@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:2f970f28-a5f2-4976-a29a-c691b8d51d76
+-->
+
 # MathML Accessibility
 
 Math textbook conversion must preserve mathematical structure, not only visual appearance.

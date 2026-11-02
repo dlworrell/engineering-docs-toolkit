@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:31b343b9-2b80-4979-a3bc-1aaf81116828
+-->
+
 # Profile Architecture
 
 Profiles define document-family-specific semantics without changing EDT's core platform.

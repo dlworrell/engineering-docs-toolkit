@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:d1a6223a-8ba2-4bd4-b415-04d5cbaa2a43
+-->
+
 # XLIFF
 
 ## Purpose

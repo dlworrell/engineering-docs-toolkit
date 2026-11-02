@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e4eae4ce-716d-4a77-a6d4-02a2f828c348
+-->
+
 # WAI-ARIA
 
 ## Purpose
