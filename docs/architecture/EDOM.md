@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:40ebddd0-5ec3-4b47-8bbb-68ee7991ac0e
+-->
+
 # Engineering Document Object Model (EDOM)
 
 The Engineering Document Object Model (EDOM) is EDT's canonical semantic representation for technical documents.

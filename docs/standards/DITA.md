@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:da39bb07-c074-44f6-b202-706529f2b416
+-->
+
 # DITA
 
 ## Purpose

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:272b92f9-3689-4c4f-bcb5-fd432cd003b6
+-->
+
 # EPUB 3
 
 ## Purpose

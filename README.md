@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:9924e502-9539-46a1-82c1-6634a64edac8
+-->
+
 # Engineering Documents Toolkit (EDT)
 
 **A Semantic Document Engineering Platform**

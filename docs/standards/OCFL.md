@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:7c8393cb-b672-47fc-a2f7-d2ee47742926
+-->
+
 # Oxford Common File Layout
 
 ## Purpose

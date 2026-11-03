@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:3a4c993b-6215-4b40-9dcc-a2417a9f9178
+-->
+
 # Roadmap
 
 ## 0.1.0 Foundation

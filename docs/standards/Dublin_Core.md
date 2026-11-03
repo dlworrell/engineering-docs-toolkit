@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:27e21d44-5955-4be8-840b-f163f1497a8e
+-->
+
 # Dublin Core
 
 ## Purpose

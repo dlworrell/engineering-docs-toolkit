@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:df852ae0-5bd1-4fb1-858e-0424853d6e35
+-->
+
 # PREMIS
 
 ## Purpose

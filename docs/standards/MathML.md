@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:26182700-1fee-4d7a-b9e2-34545feca8a5
+-->
+
 # MathML
 
 ## Purpose

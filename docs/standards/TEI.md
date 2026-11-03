@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:28f2b646-d38e-4068-9186-82eeea3e44a0
+-->
+
 # TEI
 
 ## Purpose

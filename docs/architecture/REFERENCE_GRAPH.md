@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:5e5ef14f-5138-48c2-bee0-c1676e0fea8c
+-->
+
 # Reference Graph Architecture
 
 The Reference Graph is EDT's directed relationship model for addressable document objects.

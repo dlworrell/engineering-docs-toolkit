@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:9cc0a26b-2507-47d5-aca6-a951d7fbbbb1
+-->
+
 # DataCite Metadata Schema
 
 ## Purpose

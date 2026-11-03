@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:969c5d81-a703-4ebe-881e-f6e8fc0b3404
+-->
+
 # Validation Architecture
 
 Validation is one of EDT's core semantic services. It operates on the Engineering Document Object Model (EDOM), not on source files or rendered output.

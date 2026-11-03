@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:d6b327df-0320-4b67-a40b-df85503dfff8
+-->
+
 # Citation Style Language (CSL)
 
 ## Purpose
