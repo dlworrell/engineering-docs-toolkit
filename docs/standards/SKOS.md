@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:4e61f036-4fc6-4998-ad14-4eb2493b4ef5
+-->
+
 # SKOS
 
 ## Purpose

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b55704bd-cf0a-4b45-9478-223e53e24f63
+-->
+
 # IIIF
 
 ## Purpose

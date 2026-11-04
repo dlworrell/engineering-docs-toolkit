@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e560fb37-8119-4260-b6c6-13aee72fe56b
+-->
+
 # SVG
 
 ## Purpose

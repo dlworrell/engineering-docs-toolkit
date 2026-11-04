@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:060cdce7-5c71-4d47-84a4-096081b88b24
+-->
+
 # EDT Vision
 
 ## Vision Statement

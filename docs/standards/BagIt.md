@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:c46cc13a-0bc6-44f7-bb47-4eadd76aad3b
+-->
+
 # BagIt
 
 ## Purpose

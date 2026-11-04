@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:0175c7cb-bd80-49f8-8b12-a483fd654029
+-->
+
 # The Semantic Document Engineering Manifesto
 
 ## Documents are knowledge

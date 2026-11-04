@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:af63fdfe-040a-4a89-b25d-1dab9b753cb8
+-->
+
 # BibTeX
 
 ## Purpose

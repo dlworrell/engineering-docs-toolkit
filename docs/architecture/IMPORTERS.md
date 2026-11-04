@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b36c8889-d399-40e7-950c-11d02397ddc5
+-->
+
 # Importer Architecture
 
 Importers are responsible for acquiring source documents and transforming them into analyzable content suitable for semantic processing.

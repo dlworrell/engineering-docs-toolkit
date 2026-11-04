@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e70cef3a-fee4-4aa7-9c03-7806b8293c9b
+-->
+
 # Standards Handbook
 
 The Engineering Documents Toolkit (EDT) is a standards-first semantic document engineering platform.
