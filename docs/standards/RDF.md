@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:1c53d831-5cc8-4a64-9163-3018064eab22
+-->
+
 # RDF
 
 ## Purpose

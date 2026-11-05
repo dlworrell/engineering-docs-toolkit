@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:f519b9b5-0c93-418c-88ff-9606b7afd38f
+-->
+
 # DocBook
 
 ## Purpose

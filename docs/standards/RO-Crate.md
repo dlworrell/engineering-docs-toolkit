@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:941826ee-e8ed-42db-9d62-2944dfb1ebdc
+-->
+
 # RO-Crate
 
 ## Purpose

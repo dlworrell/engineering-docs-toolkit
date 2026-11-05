@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:352d6f2e-f0bf-49cc-baac-69631ad97a5e
+-->
+
 # Contributing to Engineering Docs Toolkit
 
 Engineering Docs Toolkit (EDT) is a semantic document-processing toolkit. Contributions should improve document meaning, accessibility, translation quality, reproducibility, or publishing correctness.

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:e866c57e-3b2e-4592-b6ac-07ceef429b49
+-->
+
 # Provenance Architecture
 
 Provenance is the chain of evidence that connects every semantic object in EDOM back to its originating source material.

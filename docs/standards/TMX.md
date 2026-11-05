@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:660f0f2a-7942-4de6-abb8-a76eb504cd6a
+-->
+
 # TMX
 
 TMX is an XML interchange format used by localization tools to exchange bilingual segment records.

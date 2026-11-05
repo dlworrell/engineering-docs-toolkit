@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:3cd7afbe-b0d5-44bf-a278-4b2c0f09f877
+-->
+
 # SRX
 
 ## Purpose

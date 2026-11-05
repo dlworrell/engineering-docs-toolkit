@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:4e3e0cd0-ee78-40e1-9ab1-a1d747e5438e
+-->
+
 # EDT Architecture Handbook
 
 This handbook describes the architecture of the Engineering Documents Toolkit (EDT), a semantic document engineering platform.

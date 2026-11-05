@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:ffb44944-d6cc-4244-a6d0-92d2f9ab2c27
+-->
+
 # Quality Reports Architecture
 
 Quality reports summarize EDT validation and reference graph results into publication-readiness metrics.

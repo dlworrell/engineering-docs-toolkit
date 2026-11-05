@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:b947eeb7-e029-49ce-92b7-9aea9bab299f
+-->
+
 # Publisher Architecture
 
 Publishers render EDOM into target output formats.

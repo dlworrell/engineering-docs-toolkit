@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:1d7f7e03-24ce-41ae-93ba-7d24bae1c244
+-->
+
 # SHACL
 
 ## Purpose

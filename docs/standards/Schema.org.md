@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:96fa4255-9aec-47fc-9ca3-c62326389104
+-->
+
 # Schema.org
 
 ## Purpose

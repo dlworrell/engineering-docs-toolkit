@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:320fe709-26c6-406c-9044-13702cd27114
+-->
+
 # Crossref
 
 ## Purpose

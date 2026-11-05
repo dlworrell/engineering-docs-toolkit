@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Donovan Worrell
+
+SPDX-License-Identifier: Apache-2.0
+Catalyst-File-ID: urn:uuid:7bb2511f-4c26-4676-9f27-6abfcb5d234a
+-->
+
 # Office Open XML
 
 ## Purpose
